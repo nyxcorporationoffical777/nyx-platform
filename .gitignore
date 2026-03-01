@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build output
+frontend/dist/
+frontend/dist.zip
+
+# Environment files
+.env
+backend/.env
+
+# Database (keep schema, not data)
+backend/quantifypro.db
+
+# Uploads
+backend/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite
+frontend/.vite/
