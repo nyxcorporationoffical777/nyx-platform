@@ -108,7 +108,7 @@ export default function Dashboard() {
               )}
             </div>
             <div className="flex items-end gap-3 mb-1">
-              <span className="mono font-bold text-white count-in" style={{ fontSize: 44, letterSpacing: '-0.04em', lineHeight: 1 }}>
+              <span className="mono font-bold text-white count-in" style={{ fontSize: 'clamp(28px, 6vw, 44px)', letterSpacing: '-0.04em', lineHeight: 1 }}>
                 ${(user?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
@@ -135,7 +135,7 @@ export default function Dashboard() {
           </div>
 
           {/* Right — sparkline + quick stats */}
-          <div className="lg:w-72 flex flex-col" style={{ borderLeft: '1px solid var(--border)' }}>
+          <div className="lg:w-72 flex flex-col border-t lg:border-t-0 lg:border-l" style={{ borderColor: 'var(--border)' }}>
             <div className="px-5 pt-4 pb-2">
               <p className="section-label mb-2">7-day trend</p>
               <ResponsiveContainer width="100%" height={60}>

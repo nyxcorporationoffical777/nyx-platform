@@ -153,13 +153,13 @@ export default function Assets() {
   })();
 
   return (
-    <div className="p-6 space-y-5 min-w-0 w-full fade-in">
+    <div className="p-4 space-y-4 min-w-0 w-full fade-in">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="section-label mb-1.5">Finance</p>
-          <h1 className="font-bold text-white" style={{ fontSize: 22, letterSpacing: '-0.025em' }}>Assets</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text3)' }}>Manage your balance, deposits and withdrawals</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="section-label mb-1">Finance</p>
+          <h1 className="font-bold text-white text-lg" style={{ letterSpacing: '-0.025em' }}>Assets</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>Balance · Deposits · Withdrawals</p>
         </div>
         <button onClick={refresh}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all"

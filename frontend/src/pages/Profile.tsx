@@ -259,12 +259,15 @@ export default function Profile() {
             { label: 'Member For',    value: `${memberDays} days`,                             color: 'var(--text2)',  icon: Calendar },
           ].map((s, i) => (
             <div key={s.label} className="px-4 py-3"
-              style={{ borderRight: i < 3 ? '1px solid var(--border)' : 'none' }}>
+              style={{
+                borderRight: [0,2].includes(i) ? '1px solid var(--border)' : 'none',
+                borderBottom: i < 2 ? '1px solid var(--border)' : 'none',
+              }}>
               <div className="flex items-center gap-1.5 mb-1">
                 <s.icon size={11} style={{ color: 'var(--text3)' }} />
                 <p className="text-xs" style={{ color: 'var(--text3)' }}>{s.label}</p>
               </div>
-              <p className="text-base font-bold mono" style={{ color: s.color }}>{s.value}</p>
+              <p className="text-sm font-bold mono" style={{ color: s.color }}>{s.value}</p>
             </div>
           ))}
         </div>

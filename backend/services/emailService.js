@@ -12,8 +12,12 @@ function getTransporter() {
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM || 'NYX Platform <noreply@nyxplatform.com>';
 
-  if (host && user && pass) {
-    transporter = nodemailer.createTransport({
+  if (user && pass) {
+    const isGmail = (host || '').includes('gmail') || (user || '').includes('gmail.com');
+    transporter = nodemailer.createTransport(isGmail ? {
+      service: 'gmail',
+      auth: { user, pass },
+    } : {
       host, port,
       secure: port === 465,
       auth: { user, pass },

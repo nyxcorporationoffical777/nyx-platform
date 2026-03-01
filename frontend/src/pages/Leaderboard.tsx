@@ -174,26 +174,27 @@ export default function Leaderboard() {
     <div className="min-w-0 w-full p-5 space-y-5">
 
       {/* Header + tabs */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-lg font-black text-white flex items-center gap-2">
-            <Trophy size={18} style={{ color: 'var(--yellow)' }} />
+          <h1 className="text-base font-black text-white flex items-center gap-2">
+            <Trophy size={16} style={{ color: 'var(--yellow)' }} />
             Leaderboard & Bonuses
           </h1>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>Top earners · Active promotions · Rewards</p>
         </div>
-        <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+        <div className="flex items-center gap-1 p-1 rounded-lg self-start sm:self-auto" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
           {([
-            { key: 'leaderboard', label: '🏆 Leaderboard' },
-            { key: 'bonuses',     label: '🎁 Bonuses' },
-            { key: 'missions',    label: '🎯 Missions' },
+            { key: 'leaderboard', label: '🏆', full: 'Leaderboard' },
+            { key: 'bonuses',     label: '🎁', full: 'Bonuses' },
+            { key: 'missions',    label: '🎯', full: 'Missions' },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className="px-4 py-1.5 rounded text-xs font-bold transition-all"
+              className="px-3 py-1.5 rounded text-xs font-bold transition-all"
               style={tab === t.key
                 ? { background: 'var(--yellow)', color: '#000' }
                 : { color: 'var(--text2)', background: 'transparent' }}>
-              {t.label}
+              <span className="sm:hidden">{t.label} {t.full}</span>
+              <span className="hidden sm:inline">{t.label} {t.full}</span>
             </button>
           ))}
         </div>

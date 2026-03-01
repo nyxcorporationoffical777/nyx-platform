@@ -117,36 +117,29 @@ export default function Wallet() {
   }
 
   return (
-    <div className="p-6 space-y-5 fade-in">
+    <div className="p-4 space-y-4 fade-in">
       {/* ── Header ── */}
-      <div className="rounded-2xl px-5 py-5"
+      <div className="rounded-2xl p-4"
         style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-        <div className="flex items-center justify-between gap-6">
-          <div>
-            <p className="section-label mb-1.5">Portfolio</p>
-            <h1 className="font-bold text-white" style={{ fontSize: 22, letterSpacing: '-0.025em' }}>Wallet</h1>
-            <p className="text-xs mt-1" style={{ color: 'var(--text3)' }}>Multi-asset · Deposit · Convert</p>
+        <p className="section-label mb-3">Portfolio</p>
+        <div className="flex flex-wrap gap-3">
+          {/* Platform balance */}
+          <div className="flex-1 min-w-[140px] px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+            <p className="section-label mb-1">Platform Balance</p>
+            <p className="mono font-bold text-white" style={{ fontSize: 20, letterSpacing: '-0.03em' }}>
+              ${(user?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>USD · yield + deposits</p>
           </div>
-          <div className="flex items-center gap-4 ml-auto">
-            {/* Platform balance — primary source of truth */}
-            <div className="text-right px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
-              <p className="section-label mb-1">Platform Balance</p>
-              <p className="mono font-bold text-white" style={{ fontSize: 24, letterSpacing: '-0.03em' }}>
-                ${(user?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {totalUsd > 0 && (
+            <div className="flex-1 min-w-[140px] px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+              <p className="section-label mb-1">Crypto Holdings</p>
+              <p className="mono font-bold" style={{ fontSize: 20, letterSpacing: '-0.03em', color: 'var(--yellow)' }}>
+                ${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>USD · yield + deposits</p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>{assets.filter(a => a.balance > 0).length} assets</p>
             </div>
-            {/* Crypto wallet total */}
-            {totalUsd > 0 && (
-              <div className="text-right px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
-                <p className="section-label mb-1">Crypto Holdings</p>
-                <p className="mono font-bold" style={{ fontSize: 24, letterSpacing: '-0.03em', color: 'var(--yellow)' }}>
-                  ${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>{assets.filter(a => a.balance > 0).length} assets</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
 

@@ -119,10 +119,29 @@ export default function Help() {
   const CurIcon = cur.icon;
 
   return (
-    <div className="fade-in" style={{ display: 'flex', height: 'calc(100vh - 60px)', overflow: 'hidden', background: 'var(--bg)' }}>
+    <div className="fade-in flex flex-col lg:flex-row" style={{ minHeight: 'calc(100vh - 60px)', background: 'var(--bg)' }}>
 
-      {/* Left nav panel */}
-      <div className="flex-shrink-0 py-3" style={{
+      {/* Mobile: horizontal scrollable tab strip */}
+      <div className="lg:hidden flex overflow-x-auto gap-1 p-3 flex-shrink-0"
+        style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
+        {SECTIONS.map(s => {
+          const Icon = s.icon;
+          const on = active === s.id;
+          return (
+            <button key={s.id} onClick={() => setActive(s.id)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl flex-shrink-0 text-left transition-all"
+              style={on
+                ? { background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--text)' }
+                : { background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text3)' }}>
+              <Icon size={11} style={{ color: on ? s.color : 'var(--text3)' }} />
+              <span className="text-[11px] font-medium whitespace-nowrap">{s.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Desktop: left nav panel */}
+      <div className="hidden lg:flex flex-col flex-shrink-0 py-3" style={{
         width: 220,
         background: 'var(--bg-card)',
         borderRight: '1px solid var(--border)',
@@ -134,7 +153,7 @@ export default function Help() {
           const on = active === s.id;
           return (
             <button key={s.id} onClick={() => setActive(s.id)}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all relative"
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition-all"
               style={on
                 ? { color: 'var(--text)', background: 'rgba(99,102,241,0.07)', borderLeft: '2px solid var(--brand-1)', paddingLeft: 14 }
                 : { color: 'var(--text3)', borderLeft: '2px solid transparent' }}>
@@ -143,8 +162,6 @@ export default function Help() {
             </button>
           );
         })}
-
-        {/* Support CTA */}
         <div className="mx-3 mt-4 p-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-2 mb-2">
             <MessageCircle size={12} style={{ color: 'var(--brand-1)' }} />
@@ -156,7 +173,7 @@ export default function Help() {
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-5 space-y-4 max-w-3xl">
+        <div className="p-4 space-y-4 max-w-3xl">
 
           {/* Section header */}
           <div className="flex items-center gap-2.5">
