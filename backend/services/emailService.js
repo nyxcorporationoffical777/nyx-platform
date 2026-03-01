@@ -52,7 +52,7 @@ function htmlWrap(content) {
 
 async function sendEmail(to, subject, htmlContent, textContent) {
   const resend = getResend();
-  const from = process.env.RESEND_FROM || `${BRAND_NAME} <onboarding@resend.dev>`;
+  const from = process.env.RESEND_FROM || 'onboarding@resend.dev';
 
   if (!resend) {
     console.log(`\n📧 [EMAIL — not sent, set RESEND_API_KEY env var]`);
