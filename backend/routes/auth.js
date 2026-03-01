@@ -43,7 +43,12 @@ router.post('/register', async (req, res) => {
     'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified, email_verify_token) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
   ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, `${otpCode}|${otpExpiry}`);
 
-  email.sendOtpEmail(userEmail, full_name, otpCode).catch(() => {});
+  try {
+    await email.sendOtpEmail(userEmail, full_name, otpCode);
+    console.log(`OTP sent to ${userEmail}: ${otpCode}`);
+  } catch (e) {
+    console.error(`OTP send error to ${userEmail}:`, e.message);
+  }
 
   res.json({ needs_verification: true, message: 'Registration successful. Check your email for the 6-digit code.' });
 });
@@ -84,7 +89,12 @@ router.post('/resend-verification', async (req, res) => {
   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   db.prepare('UPDATE users SET email_verify_token = ? WHERE id = ?').run(`${otpCode}|${otpExpiry}`, user.id);
 
-  email.sendOtpEmail(userEmail, user.full_name, otpCode).catch(() => {});
+  try {
+    await email.sendOtpEmail(userEmail, user.full_name, otpCode);
+    console.log(`OTP resent to ${userEmail}: ${otpCode}`);
+  } catch (e) {
+    console.error(`OTP resend error to ${userEmail}:`, e.message);
+  }
   res.json({ message: 'A new 6-digit code has been sent to your email.' });
 });
 
