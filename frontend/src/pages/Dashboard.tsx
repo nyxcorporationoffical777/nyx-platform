@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Wallet, CandlestickChart, Bot, Users, TrendingUp, TrendingDown,
+  Wallet, Bot, Users, TrendingUp,
   ArrowUpRight, ArrowDownLeft, Zap, ChevronRight,
   BarChart2, Trophy, CreditCard, ArrowRight, Flame, Star,
 } from 'lucide-react';
@@ -18,7 +18,6 @@ const VIP_NEXT: Record<string, number> = {
 
 interface WalletAsset { asset: string; balance: number; usd_value: number; }
 interface RecentTx { id: number; type: string; amount: number; note: string | null; created_at: string; }
-interface OpenPos { id: number; symbol: string; direction: string; leverage: number; unrealized_pnl: number; margin: number; }
 
 const ASSET_COLORS: Record<string, string> = {
   USDT: '#26a17b', BTC: '#f7931a', ETH: '#627eea', BNB: '#f59e0b',
@@ -29,7 +28,7 @@ const ASSET_ICONS: Record<string, string> = {
 };
 const TX_COLORS: Record<string, string> = {
   deposit: 'var(--green)', withdraw: 'var(--red)', earn: 'var(--green)',
-  convert: 'var(--cyan)', referral: 'var(--purple2)', trade_close: 'var(--yellow)',
+  convert: 'var(--cyan)', referral: 'var(--purple2)',
 };
 const PAIR_LABELS: Record<string, string> = {
   BTCUSDT: 'BTC/USDT', ETHUSDT: 'ETH/USDT', BNBUSDT: 'BNB/USDT', SOLUSDT: 'SOL/USDT',
@@ -42,7 +41,6 @@ export default function Dashboard() {
   const [assets, setAssets] = useState<WalletAsset[]>([]);
   const [totalUsd, setTotalUsd] = useState(0);
   const [recentTxs, setRecentTxs] = useState<RecentTx[]>([]);
-  const [openPositions, setOpenPositions] = useState<OpenPos[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -63,10 +61,9 @@ export default function Dashboard() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [walletRes, txRes, posRes, priceRes] = await Promise.allSettled([
+      const [walletRes, txRes, priceRes] = await Promise.allSettled([
         api.get('/wallet'),
         api.get('/wallet/transactions'),
-        api.get('/futures/positions'),
         api.get('/futures/prices'),
       ]);
       if (walletRes.status === 'fulfilled') {
@@ -74,7 +71,6 @@ export default function Dashboard() {
         setTotalUsd(walletRes.value.data.total_usd || 0);
       }
       if (txRes.status === 'fulfilled') setRecentTxs((txRes.value.data.transactions || []).slice(0, 8));
-      if (posRes.status === 'fulfilled') setOpenPositions(posRes.value.data.positions || []);
       if (priceRes.status === 'fulfilled') setPrices(priceRes.value.data.prices || {});
     } finally { setLoading(false); }
   }, []);
@@ -82,12 +78,11 @@ export default function Dashboard() {
   useEffect(() => {
     fetchAll();
     const t = setInterval(() => {
-      api.get('/futures/prices').then(r => setPrices(r.data.prices)).catch(() => {});
+      api.get('/futures/prices').then((r: { data: { prices: Record<string, number> } }) => setPrices(r.data.prices)).catch(() => {});
     }, 15000);
     return () => clearInterval(t);
   }, [fetchAll]);
 
-  const totalPnl = openPositions.reduce((s, p) => s + p.unrealized_pnl, 0);
   const hr = new Date().getHours();
   const greeting = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -184,7 +179,6 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'Deposit',    sub: 'Add USDT',     icon: ArrowDownLeft,    color: 'var(--green)',   path: '/assets' },
-            { label: 'Trade',      sub: 'Futures',      icon: CandlestickChart, color: 'var(--red)',     path: '/trade'  },
             { label: 'Auto Earn',  sub: 'Quant Engine', icon: Bot,              color: 'var(--yellow)',  path: '/bot'    },
             { label: 'Buy Crypto', sub: 'Top up',       icon: CreditCard,       color: 'var(--cyan)',    path: '/topup'  },
           ].map(a => (
@@ -218,7 +212,6 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[
             { title: 'Wallet',       sub: 'Multi-asset portfolio', icon: Wallet,           color: 'var(--green)',   path: '/wallet',      stat: `$${totalUsd.toFixed(2)}`,           label: 'Portfolio value' },
-            { title: 'Futures',      sub: 'Long · Short · 125×',   icon: CandlestickChart, color: 'var(--red)',     path: '/trade',       stat: openPositions.length > 0 ? `${openPositions.length} open` : 'No positions', label: openPositions.length > 0 ? `PnL: ${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}` : '125× leverage' },
             { title: 'Quant Engine', sub: 'Automated yield',       icon: Bot,              color: 'var(--yellow)',  path: '/bot',         stat: user?.bot_running ? 'Running' : 'Idle', label: `${((user?.vip_info?.dailyRate ?? 0.018)*100).toFixed(2)}%/day` },
             { title: 'Markets',      sub: 'Live prices & charts',  icon: BarChart2,        color: 'var(--purple2)', path: '/markets',     stat: `$${(prices['BTCUSDT']||0).toLocaleString(undefined,{maximumFractionDigits:0})}`, label: 'BTC/USDT' },
             { title: 'Referrals',    sub: 'Invite & earn 5%',      icon: Users,            color: 'var(--cyan)',    path: '/referrals',   stat: `$${(user?.referral_earnings??0).toFixed(2)}`, label: `${user?.referral_count??0} referrals` },
@@ -293,43 +286,20 @@ export default function Dashboard() {
           }
         </div>
 
-        {/* ── Portfolio / Positions ── */}
+        {/* ── Portfolio ── */}
         <div className="ex-card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4"
             style={{ borderBottom: '1px solid var(--border)' }}>
-            <span className="text-[13px] font-semibold text-white">
-              {openPositions.length > 0 ? `Positions (${openPositions.length})` : 'Portfolio'}
-            </span>
-            <button onClick={() => navigate(openPositions.length > 0 ? '/trade' : '/wallet')}
+            <span className="text-[13px] font-semibold text-white">Portfolio</span>
+            <button onClick={() => navigate('/wallet')}
               className="flex items-center gap-1 text-[11px] font-medium transition-colors"
               style={{ color: 'var(--text3)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}>
-              {openPositions.length > 0 ? 'Trade' : 'Wallet'} <ChevronRight size={11} />
+              Wallet <ChevronRight size={11} />
             </button>
           </div>
-          {openPositions.length > 0
-            ? openPositions.map(pos => (
-                <div key={pos.id} className="flex items-center gap-3 px-5 py-3 ex-row">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ background: pos.direction === 'long' ? 'rgba(16,185,129,0.08)' : 'rgba(244,63,94,0.08)' }}>
-                    {pos.direction === 'long'
-                      ? <TrendingUp size={14} style={{ color: 'var(--green)' }} strokeWidth={2} />
-                      : <TrendingDown size={14} style={{ color: 'var(--red)' }} strokeWidth={2} />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-white">{PAIR_LABELS[pos.symbol] || pos.symbol}</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>
-                      {pos.direction.toUpperCase()} · {pos.leverage}×
-                    </p>
-                  </div>
-                  <span className="mono text-[12px] font-semibold"
-                    style={{ color: pos.unrealized_pnl >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                    {pos.unrealized_pnl >= 0 ? '+' : ''}${pos.unrealized_pnl.toFixed(2)}
-                  </span>
-                </div>
-              ))
-            : assets.filter(a => a.balance > 0).length === 0 && !loading
+          {assets.filter(a => a.balance > 0).length === 0 && !loading
               ? (
                   <div className="py-12 flex flex-col items-center gap-3">
                     <Wallet size={22} style={{ color: 'var(--text4)' }} strokeWidth={1.5} />

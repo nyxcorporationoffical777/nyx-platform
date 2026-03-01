@@ -36,13 +36,48 @@ router.post('/register', async (req, res) => {
     myCode = generateReferralCode();
   }
 
-  const result = db.prepare(
-    'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by);
+  const verifyToken = crypto.randomBytes(32).toString('hex');
 
-  const token = jwt.sign({ id: result.lastInsertRowid, email: userEmail }, JWT_SECRET, { expiresIn: '7d' });
-  email.sendWelcome(userEmail, full_name).catch(() => {});
-  res.json({ token, message: 'Registration successful' });
+  const result = db.prepare(
+    'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified, email_verify_token) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
+  ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, verifyToken);
+
+  const appUrl = process.env.APP_URL || 'http://localhost:5173';
+  email.sendVerificationEmail(userEmail, full_name, `${appUrl}/verify-email?token=${verifyToken}`).catch(() => {});
+
+  res.json({ needs_verification: true, message: 'Registration successful. Please check your email to verify your account.' });
+});
+
+router.get('/verify-email', (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'Invalid token' });
+
+  const user = db.prepare('SELECT id, email_verified FROM users WHERE email_verify_token = ?').get(token);
+  if (!user) return res.status(400).json({ error: 'Invalid or expired verification link' });
+
+  if (user.email_verified) {
+    return res.json({ message: 'Email already verified. You can log in.' });
+  }
+
+  db.prepare('UPDATE users SET email_verified = 1, email_verify_token = NULL WHERE id = ?').run(user.id);
+  res.json({ message: 'Email verified successfully! You can now log in.' });
+});
+
+router.post('/resend-verification', async (req, res) => {
+  const { email: userEmail } = req.body;
+  if (!userEmail) return res.status(400).json({ error: 'Email required' });
+
+  const user = db.prepare('SELECT id, full_name, email_verified FROM users WHERE email = ?').get(userEmail);
+  if (!user) return res.status(404).json({ error: 'Account not found' });
+  if (user.email_verified) return res.status(400).json({ error: 'Email already verified' });
+
+  const verifyToken = crypto.randomBytes(32).toString('hex');
+  db.prepare('UPDATE users SET email_verify_token = ? WHERE id = ?').run(verifyToken, user.id);
+
+  const appUrl = process.env.APP_URL || 'http://localhost:5173';
+  email.sendVerificationEmail(userEmail, user.full_name, `${appUrl}/verify-email?token=${verifyToken}`).catch(() => {});
+
+  res.json({ message: 'Verification email resent.' });
 });
 
 router.post('/login', async (req, res) => {
@@ -55,6 +90,10 @@ router.post('/login', async (req, res) => {
 
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+
+  if (!user.email_verified) {
+    return res.status(403).json({ error: 'Please verify your email before logging in.', needs_verification: true, email: userEmail });
+  }
 
   // If 2FA is enabled and no code provided — return challenge
   if (user.totp_enabled && !totp_code) {

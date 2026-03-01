@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Wallet, Bot, Users, TrendingUp, LogOut, HelpCircle, BarChart2,
-  Trophy, CreditCard, Settings, CandlestickChart,
+  Trophy, CreditCard, Settings,
   ArrowLeftRight, LayoutDashboard, ChevronUp, Lock, LineChart, X, BadgeCheck, Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -16,7 +16,6 @@ const NAV = [
     { to: '/topup',     icon: CreditCard,       label: 'Buy Crypto',  dot: '' },
   ]},
   { section: 'Markets', items: [
-    { to: '/trade',     icon: CandlestickChart, label: 'Futures',     dot: '' },
     { to: '/markets',   icon: BarChart2,        label: 'Markets',     dot: '' },
     { to: '/analytics', icon: LineChart,        label: 'Analytics',   dot: '' },
   ]},

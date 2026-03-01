@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { TrendingUp, Eye, EyeOff, Lock, Shield, CheckCircle, ArrowRight } from 'lucide-react';
+import api from '../api/axios';
+import { TrendingUp, Eye, EyeOff, Lock, Shield, CheckCircle, ArrowRight, Mail } from 'lucide-react';
 
 const TIERS = [
   { label: 'Starter',  rate: '1.80%', color: '#6b7280', bal: '$100+' },
@@ -20,6 +21,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [needs2FA, setNeeds2FA] = useState(false);
   const [totpCode, setTotpCode] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resentVerify, setResentVerify] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +36,23 @@ export default function Login() {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid credentials');
+      if (err.response?.data?.needs_verification) {
+        setNeedsVerification(true);
+        setError('');
+      } else {
+        setError(err.response?.data?.error || 'Invalid credentials');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResendVerify = async () => {
+    setResentVerify(false);
+    try {
+      await api.post('/auth/resend-verification', { email: form.email });
+      setResentVerify(true);
+    } catch {}
   };
 
   const handle2FA = async (e: React.FormEvent) => {
@@ -147,6 +163,31 @@ export default function Login() {
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-6 text-[13px]"
               style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.2)', color: 'var(--red)' }}>
               <Shield size={14} className="flex-shrink-0" /> {error}
+            </div>
+          )}
+
+          {needsVerification && (
+            <div className="rounded-xl p-4 mb-5 space-y-3"
+              style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
+              <div className="flex items-center gap-2.5">
+                <Mail size={16} style={{ color: 'var(--brand-1)', flexShrink: 0 }} />
+                <div>
+                  <p className="text-[13px] font-semibold text-white">Email not verified</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>
+                    Check your inbox and click the verification link.
+                  </p>
+                </div>
+              </div>
+              {resentVerify && (
+                <p className="text-[12px]" style={{ color: 'var(--green)' }}>Verification email resent!</p>
+              )}
+              <button onClick={handleResendVerify}
+                className="text-[12px] font-medium transition-colors"
+                style={{ color: 'var(--brand-1)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-2)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--brand-1)')}>
+                Resend verification email →
+              </button>
             </div>
           )}
 

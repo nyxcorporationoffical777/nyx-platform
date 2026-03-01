@@ -14,13 +14,13 @@ import Help from './pages/Help';
 import Leaderboard from './pages/Leaderboard';
 import Markets from './pages/Markets';
 import TopUp from './pages/TopUp';
-import Trade from './pages/Trade';
 import Wallet from './pages/Wallet';
 import Dashboard from './pages/Dashboard';
 import Staking from './pages/Staking';
 import Analytics from './pages/Analytics';
 import KYC from './pages/KYC';
 import Legal from './pages/Legal';
+import VerifyEmail from './pages/VerifyEmail';
 import OnboardingTour from './components/OnboardingTour';
 import { ToastProvider } from './components/Toast';
 
@@ -57,6 +57,7 @@ function AppRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assets" element={<Assets />} />
@@ -67,7 +68,6 @@ function AppRoutes() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/markets" element={<Markets />} />
         <Route path="/topup" element={<TopUp />} />
-        <Route path="/trade" element={<Trade />} />
         <Route path="/wallet" element={<Wallet />} />
         <Route path="/staking" element={<Staking />} />
         <Route path="/analytics" element={<Analytics />} />

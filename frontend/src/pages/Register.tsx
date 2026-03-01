@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { TrendingUp, Eye, EyeOff, UserPlus, Shield, CheckCircle, Users, Zap, DollarSign, Lock } from 'lucide-react';
+import { TrendingUp, Eye, EyeOff, UserPlus, Shield, CheckCircle, Users, Zap, DollarSign, Lock, Mail } from 'lucide-react';
 
 const TIERS_REG = [
   { label: 'Starter',  rate: '1.80%', color: '#6b7280', bal: '$100+' },
@@ -13,12 +12,12 @@ const TIERS_REG = [
 ];
 
 export default function Register() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
   const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm: '', referral_code: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,13 +32,20 @@ export default function Register() {
         password: form.password,
         referral_code: form.referral_code || undefined,
       });
-      await login(form.email, form.password);
-      navigate('/dashboard');
+      setRegistered(true);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResend = async () => {
+    setResent(false);
+    try {
+      await api.post('/auth/resend-verification', { email: form.email });
+      setResent(true);
+    } catch {}
   };
 
   return (
@@ -132,6 +138,50 @@ export default function Register() {
             <p className="font-black text-[14px] text-white tracking-[0.1em]">NYX</p>
           </div>
 
+          {registered ? (
+            <div className="text-center space-y-5">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                <Mail size={28} style={{ color: 'var(--brand-1)' }} />
+              </div>
+              <div>
+                <h1 className="font-bold text-white mb-2" style={{ fontSize: 22, letterSpacing: '-0.02em' }}>
+                  Check your inbox
+                </h1>
+                <p className="text-[14px] leading-relaxed" style={{ color: 'var(--text2)' }}>
+                  We sent a verification link to<br />
+                  <span className="font-semibold text-white">{form.email}</span>
+                </p>
+              </div>
+              <div className="rounded-xl p-4 text-left space-y-2"
+                style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+                {['Check your spam/junk folder if not in inbox', 'Click the link in the email to activate', 'Link expires in 24 hours'].map(s => (
+                  <div key={s} className="flex items-center gap-2.5">
+                    <CheckCircle size={12} style={{ color: 'var(--green)', flexShrink: 0 }} />
+                    <span className="text-[12px]" style={{ color: 'var(--text2)' }}>{s}</span>
+                  </div>
+                ))}
+              </div>
+              {resent && (
+                <div className="text-[12px] px-3 py-2 rounded-lg"
+                  style={{ background: 'rgba(16,185,129,0.08)', color: 'var(--green)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  Verification email resent!
+                </div>
+              )}
+              <button onClick={handleResend}
+                className="w-full py-3 rounded-xl text-[13px] font-medium transition-all"
+                style={{ background: 'var(--bg3)', color: 'var(--text2)', border: '1px solid var(--border)' }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border2)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
+                Resend verification email
+              </button>
+              <Link to="/login" className="block text-center text-[13px] font-medium transition-colors"
+                style={{ color: 'var(--brand-1)' }}>
+                Already verified? Sign in →
+              </Link>
+            </div>
+          ) : (
+          <>
           <div className="mb-7">
             <h1 className="font-bold text-white mb-2" style={{ fontSize: 26, letterSpacing: '-0.03em' }}>
               Create account
@@ -234,6 +284,8 @@ export default function Register() {
           <p className="text-[11px] mt-4 text-center" style={{ color: 'var(--text3)' }}>
             By creating an account you agree to our Terms of Service
           </p>
+          </>
+          )}
         </div>
       </div>
     </div>

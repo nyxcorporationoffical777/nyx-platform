@@ -187,6 +187,8 @@ const newCols = [
   { name: 'totp_secret',          def: 'TEXT DEFAULT NULL' },
   { name: 'totp_enabled',         def: 'INTEGER DEFAULT 0' },
   { name: 'kyc_status',           def: "TEXT DEFAULT 'unverified'" },
+  { name: 'email_verified',       def: 'INTEGER DEFAULT 0' },
+  { name: 'email_verify_token',   def: 'TEXT DEFAULT NULL' },
 ];
 for (const col of newCols) {
   if (!userCols.includes(col.name)) {

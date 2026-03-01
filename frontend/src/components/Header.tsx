@@ -10,7 +10,7 @@ const VIP_COLOR: Record<string, string> = {
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard', '/wallet': 'Wallet', '/assets': 'Assets',
-  '/trade': 'Futures', '/markets': 'Markets', '/bot': 'Quant Engine',
+  '/markets': 'Markets', '/bot': 'Quant Engine',
   '/leaderboard': 'Leaderboard', '/referrals': 'Referrals',
   '/staking': 'Staking', '/analytics': 'Analytics',
   '/kyc': 'KYC Verification',

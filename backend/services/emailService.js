@@ -88,6 +88,16 @@ async function sendEmail(to, subject, htmlContent, textContent) {
 
 // ── Email templates ────────────────────────────────────────────────────────
 
+exports.sendVerificationEmail = (to, name, verifyUrl) => sendEmail(to,
+  `Verify your ${BRAND_NAME} email`,
+  `<h2>Verify Your Email Address</h2>
+   <p>Hi <span class="highlight">${name}</span>, thanks for registering!</p>
+   <p>Click the button below to verify your email and activate your account. This link expires in 24 hours.</p>
+   <a href="${verifyUrl}" class="btn">Verify Email →</a>
+   <p style="margin-top:16px;font-size:12px;color:#52525e">If you didn't create an account, you can safely ignore this email.</p>`,
+  `Verify your email: ${verifyUrl}`
+);
+
 exports.sendWelcome = (to, name) => sendEmail(to,
   `Welcome to ${BRAND_NAME} 🎉`,
   `<h2>Welcome, ${name}!</h2>
