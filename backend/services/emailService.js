@@ -1,48 +1,18 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Configure via environment variables — re-evaluated on every call so Railway env vars are always fresh
-let _realTransporter = null;
-
-function getTransporter() {
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587');
-
-  if (user && pass) {
-    // Only create a real transporter once (once we have creds)
-    if (!_realTransporter) {
-      const isGmail = (host || '').includes('gmail') || (user || '').includes('gmail.com');
-      _realTransporter = nodemailer.createTransport(isGmail ? {
-        service: 'gmail',
-        auth: { user, pass },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-      } : {
-        host, port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-      console.log(`📧 SMTP configured via ${isGmail ? 'Gmail' : host} as ${user}`);
-    }
-    return _realTransporter;
-  }
-
-  // No creds — log fallback (never cached so we keep retrying each call)
-  return {
-    sendMail: async (opts) => {
-      console.log('\n📧 [EMAIL — not sent, configure SMTP env vars]');
-      console.log(`  To: ${opts.to}`);
-      console.log(`  Subject: ${opts.subject}`);
-      console.log(`  Text: ${(opts.text || '').slice(0, 120)}`);
-      return { messageId: 'dev-mode' };
-    }
-  };
-}
-
+const BRAND_NAME = 'NYX Platform';
 const BRAND_COLOR = '#6366f1';
-const BRAND_NAME  = 'NYX Platform';
+
+let _resend = null;
+function getResend() {
+  if (_resend) return _resend;
+  const key = process.env.RESEND_API_KEY;
+  if (key) {
+    _resend = new Resend(key);
+    console.log('📧 Resend email configured');
+  }
+  return _resend;
+}
 
 function htmlWrap(content) {
   return `<!DOCTYPE html>
@@ -81,22 +51,31 @@ function htmlWrap(content) {
 }
 
 async function sendEmail(to, subject, htmlContent, textContent) {
+  const resend = getResend();
+  const from = process.env.RESEND_FROM || `${BRAND_NAME} <onboarding@resend.dev>`;
+
+  if (!resend) {
+    console.log(`\n📧 [EMAIL — not sent, set RESEND_API_KEY env var]`);
+    console.log(`  To: ${to}  Subject: ${subject}`);
+    console.log(`  Text: ${(textContent || '').slice(0, 120)}`);
+    return;
+  }
+
   try {
-    const t = getTransporter();
-    const info = await t.sendMail({
-      from: process.env.SMTP_FROM || `${BRAND_NAME} <noreply@nyxplatform.com>`,
-      to, subject,
+    const { data, error } = await resend.emails.send({
+      from,
+      to,
+      subject,
       html: htmlWrap(htmlContent),
       text: textContent || subject,
     });
-    if (info.messageId && info.messageId !== 'dev-mode') {
-      console.log(`📧 Email sent to ${to} — messageId: ${info.messageId}`);
+    if (error) {
+      console.error(`📧 Email FAILED to ${to} — ${error.message}`);
+    } else {
+      console.log(`📧 Email sent to ${to} — id: ${data.id}`);
     }
   } catch (err) {
     console.error(`📧 Email FAILED to ${to} — ${err.message}`);
-    if (err.message && err.message.includes('Invalid login')) {
-      console.error('📧 HINT: Gmail requires an App Password (not your regular password). Generate one at: https://myaccount.google.com/apppasswords');
-    }
   }
 }
 
