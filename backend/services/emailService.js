@@ -1,40 +1,41 @@
 const nodemailer = require('nodemailer');
 
-// Configure via environment variables — fallback to ethereal (test) if not set
-let transporter;
+// Configure via environment variables — re-evaluated on every call so Railway env vars are always fresh
+let _realTransporter = null;
 
 function getTransporter() {
-  if (transporter) return transporter;
-
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587');
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || 'NYX Platform <noreply@nyxplatform.com>';
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT || '587');
 
   if (user && pass) {
-    const isGmail = (host || '').includes('gmail') || (user || '').includes('gmail.com');
-    transporter = nodemailer.createTransport(isGmail ? {
-      service: 'gmail',
-      auth: { user, pass },
-    } : {
-      host, port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
-  } else {
-    // Development: log emails to console instead of sending
-    transporter = {
-      sendMail: async (opts) => {
-        console.log('\n📧 [EMAIL — not sent, configure SMTP env vars]');
-        console.log(`  To: ${opts.to}`);
-        console.log(`  Subject: ${opts.subject}`);
-        console.log(`  Text: ${(opts.text || '').slice(0, 120)}`);
-        return { messageId: 'dev-mode' };
-      }
-    };
+    // Only create a real transporter once (once we have creds)
+    if (!_realTransporter) {
+      const isGmail = (host || '').includes('gmail') || (user || '').includes('gmail.com');
+      _realTransporter = nodemailer.createTransport(isGmail ? {
+        service: 'gmail',
+        auth: { user, pass },
+      } : {
+        host, port,
+        secure: port === 465,
+        auth: { user, pass },
+      });
+      console.log(`📧 SMTP configured via ${isGmail ? 'Gmail' : host} as ${user}`);
+    }
+    return _realTransporter;
   }
-  return transporter;
+
+  // No creds — log fallback (never cached so we keep retrying each call)
+  return {
+    sendMail: async (opts) => {
+      console.log('\n📧 [EMAIL — not sent, configure SMTP env vars]');
+      console.log(`  To: ${opts.to}`);
+      console.log(`  Subject: ${opts.subject}`);
+      console.log(`  Text: ${(opts.text || '').slice(0, 120)}`);
+      return { messageId: 'dev-mode' };
+    }
+  };
 }
 
 const BRAND_COLOR = '#6366f1';
@@ -79,14 +80,20 @@ function htmlWrap(content) {
 async function sendEmail(to, subject, htmlContent, textContent) {
   try {
     const t = getTransporter();
-    await t.sendMail({
+    const info = await t.sendMail({
       from: process.env.SMTP_FROM || `${BRAND_NAME} <noreply@nyxplatform.com>`,
       to, subject,
       html: htmlWrap(htmlContent),
       text: textContent || subject,
     });
-  } catch (e) {
-    console.error('Email send error:', e.message);
+    if (info.messageId && info.messageId !== 'dev-mode') {
+      console.log(`📧 Email sent to ${to} — messageId: ${info.messageId}`);
+    }
+  } catch (err) {
+    console.error(`📧 Email FAILED to ${to} — ${err.message}`);
+    if (err.message && err.message.includes('Invalid login')) {
+      console.error('📧 HINT: Gmail requires an App Password (not your regular password). Generate one at: https://myaccount.google.com/apppasswords');
+    }
   }
 }
 
