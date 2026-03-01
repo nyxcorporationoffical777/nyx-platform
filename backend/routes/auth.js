@@ -46,8 +46,10 @@ router.post('/register', async (req, res) => {
     ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, `${otpCode}|${otpExpiry}`);
     console.log(`[register] user saved: ${userEmail}`);
 
-    await email.sendOtpEmail(userEmail, full_name, otpCode);
-    console.log(`[register] OTP dispatched to ${userEmail}: ${otpCode}`);
+    // Send OTP async — do NOT await so registration never hangs on SMTP
+    email.sendOtpEmail(userEmail, full_name, otpCode)
+      .then(() => console.log(`[register] OTP sent to ${userEmail}`))
+      .catch(e => console.error(`[register] OTP email error: ${e.message}`));
 
     res.json({ needs_verification: true, message: 'Registration successful. Check your email for the 6-digit code.' });
   } catch (e) {
@@ -92,12 +94,10 @@ router.post('/resend-verification', async (req, res) => {
   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   db.prepare('UPDATE users SET email_verify_token = ? WHERE id = ?').run(`${otpCode}|${otpExpiry}`, user.id);
 
-  try {
-    await email.sendOtpEmail(userEmail, user.full_name, otpCode);
-    console.log(`OTP resent to ${userEmail}: ${otpCode}`);
-  } catch (e) {
-    console.error(`OTP resend error to ${userEmail}:`, e.message);
-  }
+  email.sendOtpEmail(userEmail, user.full_name, otpCode)
+    .then(() => console.log(`[resend] OTP sent to ${userEmail}`))
+    .catch(e => console.error(`[resend] OTP email error: ${e.message}`));
+
   res.json({ message: 'A new 6-digit code has been sent to your email.' });
 });
 
