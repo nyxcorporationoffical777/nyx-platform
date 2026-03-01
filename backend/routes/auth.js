@@ -15,42 +15,45 @@ function generateReferralCode() {
 }
 
 router.post('/register', async (req, res) => {
-  const { full_name, email: userEmail, password, referral_code } = req.body;
-  if (!full_name || !userEmail || !password)
-    return res.status(400).json({ error: 'All fields required' });
-
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(userEmail);
-  if (existing) return res.status(409).json({ error: 'Email already registered' });
-
-  const hashed = await bcrypt.hash(password, 10);
-  const vip = getVipLevel(0);
-
-  let referred_by = null;
-  if (referral_code) {
-    const referrer = db.prepare('SELECT id FROM users WHERE referral_code = ?').get(referral_code.toUpperCase());
-    if (referrer) referred_by = referrer.id;
-  }
-
-  let myCode = generateReferralCode();
-  while (db.prepare('SELECT id FROM users WHERE referral_code = ?').get(myCode)) {
-    myCode = generateReferralCode();
-  }
-
-  const otpCode = String(Math.floor(100000 + Math.random() * 900000));
-  const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
-
-  db.prepare(
-    'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified, email_verify_token) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
-  ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, `${otpCode}|${otpExpiry}`);
-
   try {
-    await email.sendOtpEmail(userEmail, full_name, otpCode);
-    console.log(`OTP sent to ${userEmail}: ${otpCode}`);
-  } catch (e) {
-    console.error(`OTP send error to ${userEmail}:`, e.message);
-  }
+    const { full_name, email: userEmail, password, referral_code } = req.body;
+    if (!full_name || !userEmail || !password)
+      return res.status(400).json({ error: 'All fields required' });
 
-  res.json({ needs_verification: true, message: 'Registration successful. Check your email for the 6-digit code.' });
+    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(userEmail);
+    if (existing) return res.status(409).json({ error: 'Email already registered' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const vip = getVipLevel(0);
+
+    let referred_by = null;
+    if (referral_code) {
+      const referrer = db.prepare('SELECT id FROM users WHERE referral_code = ?').get(referral_code.toUpperCase());
+      if (referrer) referred_by = referrer.id;
+    }
+
+    let myCode = generateReferralCode();
+    while (db.prepare('SELECT id FROM users WHERE referral_code = ?').get(myCode)) {
+      myCode = generateReferralCode();
+    }
+
+    const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+    console.log(`[register] inserting user: ${userEmail}`);
+    db.prepare(
+      'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified, email_verify_token) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
+    ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, `${otpCode}|${otpExpiry}`);
+    console.log(`[register] user saved: ${userEmail}`);
+
+    await email.sendOtpEmail(userEmail, full_name, otpCode);
+    console.log(`[register] OTP dispatched to ${userEmail}: ${otpCode}`);
+
+    res.json({ needs_verification: true, message: 'Registration successful. Check your email for the 6-digit code.' });
+  } catch (e) {
+    console.error('[register] ERROR:', e.message, e.stack);
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
+  }
 });
 
 // Verify OTP code
