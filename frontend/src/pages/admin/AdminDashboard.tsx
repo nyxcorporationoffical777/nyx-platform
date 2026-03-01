@@ -4,8 +4,11 @@ import {
   Search, RefreshCw, LogOut, Trash2, Shield, Star,
   Users, Bot, Activity, ChevronDown, ChevronUp,
   ArrowDownCircle, CheckCircle, XCircle, Clock, BadgeCheck, FileText,
-  TrendingUp, TrendingDown, Wallet
+  TrendingUp, TrendingDown, Wallet, BarChart2
 } from 'lucide-react';
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+} from 'recharts';
 import { adminApi, VIP_COLOR, TX_COLOR } from './adminTypes';
 import type { AdminUser, AdminTransaction, AdminSession, AdminStats } from './adminTypes';
 import ExpandedUser from './ExpandedUser';
@@ -118,6 +121,24 @@ export default function AdminDashboard() {
   const [kycActionTarget, setKycActionTarget] = useState<{id: number; type: 'approve'|'reject'} | null>(null);
   const [kycActionNote, setKycActionNote] = useState('');
 
+  // Health metrics
+  interface HealthData {
+    dailySignups: { day: string; count: number }[];
+    dailyYield: { day: string; amount: number }[];
+    dailyDeposits: { day: string; amount: number }[];
+    dailyWithdrawals: { day: string; amount: number }[];
+    vipDistribution: { vip_level: string; count: number; total_balance: number }[];
+    topEarners: { id: number; full_name: string; email: string; vip_level: string; balance: number; total_earned: number; total_deposited: number; active_days: number }[];
+    topBalances: { id: number; full_name: string; email: string; vip_level: string; balance: number; total_earned: number }[];
+    retention: { total: number; day1: number; day7: number; day30: number };
+    hourlyBots: { hour: string; count: number }[];
+    totals: { users: number; total_balance: number; total_deposited: number; total_withdrawn: number; total_earned: number; total_referral_earnings: number; active_bots: number; new_today: number; new_week: number };
+    totalSessions: number;
+    pendingWithdrawals: { c: number; s: number };
+  }
+  const [health, setHealth] = useState<HealthData | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
   const logout = () => { localStorage.removeItem('admin_token'); navigate('/admin'); };
 
   const checkAuth = useCallback(async () => {
@@ -154,6 +175,12 @@ export default function AdminDashboard() {
     } catch {}
   }, [withdrawalFilter]);
 
+  const loadHealth = useCallback(async () => {
+    setHealthLoading(true);
+    try { const r = await adminApi().get('/health'); setHealth(r.data); } catch {}
+    finally { setHealthLoading(false); }
+  }, []);
+
   const loadKyc = useCallback(async () => {
     try {
       const r = await adminApi().get('/kyc', { params: { status: kycFilter } });
@@ -170,6 +197,7 @@ export default function AdminDashboard() {
   useEffect(() => { loadWithdrawals(); }, [loadWithdrawals]);
   useEffect(() => { if ((mainTab as string) === 'kyc') loadKyc(); }, [mainTab, loadKyc, kycFilter]);
   useEffect(() => { loadKyc(); }, [loadKyc]);
+  useEffect(() => { if ((mainTab as string) === 'health') loadHealth(); }, [mainTab, loadHealth]);
 
   // Auto-refresh every 10s
   useEffect(() => {
@@ -219,6 +247,7 @@ export default function AdminDashboard() {
     { id: 'sessions',     label: 'Bot Sessions', icon: Bot },
     { id: 'withdrawals',  label: 'Withdrawals',  icon: ArrowDownCircle },
     { id: 'kyc',          label: 'KYC',          icon: BadgeCheck },
+    { id: 'health',       label: 'Health',       icon: BarChart2 },
   ] as const;
 
   const iSty = { background: A.bg, border: `1px solid ${A.border}`, color: A.text };
@@ -681,6 +710,192 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+        {/* ── HEALTH TAB ── */}
+        {(mainTab as string) === 'health' && (
+          <div className="space-y-5">
+            {healthLoading && !health && (
+              <div className="py-20 text-center text-xs" style={{ color: A.text3 }}>Loading health data…</div>
+            )}
+            {health && (() => {
+              const fmt = (n: number) => `$${n.toLocaleString('en', { maximumFractionDigits: 0 })}`;
+              const pct = (a: number, b: number) => b > 0 ? ((a / b) * 100).toFixed(1) + '%' : '0%';
+
+              // Merge daily arrays into one for chart
+              const days30: Record<string, { day: string; signups: number; yield: number; deposits: number; withdrawals: number }> = {};
+              health.dailySignups.forEach(d => { days30[d.day] = { ...(days30[d.day] || { day: d.day, signups: 0, yield: 0, deposits: 0, withdrawals: 0 }), signups: d.count }; });
+              health.dailyYield.forEach(d => { days30[d.day] = { ...(days30[d.day] || { day: d.day, signups: 0, yield: 0, deposits: 0, withdrawals: 0 }), yield: d.amount }; });
+              health.dailyDeposits.forEach(d => { days30[d.day] = { ...(days30[d.day] || { day: d.day, signups: 0, yield: 0, deposits: 0, withdrawals: 0 }), deposits: d.amount }; });
+              health.dailyWithdrawals.forEach(d => { days30[d.day] = { ...(days30[d.day] || { day: d.day, signups: 0, yield: 0, deposits: 0, withdrawals: 0 }), withdrawals: d.amount }; });
+              const chartData = Object.values(days30).sort((a, b) => a.day.localeCompare(b.day)).map(d => ({ ...d, day: d.day.slice(5) }));
+
+              return (<>
+                {/* KPI strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total Users',    value: String(health.totals.users),           sub: `+${health.totals.new_today} today · +${health.totals.new_week} this week`, color: A.brand },
+                    { label: 'Platform AUM',   value: fmt(health.totals.total_balance),      sub: `${fmt(health.totals.total_deposited)} deposited`,  color: A.green },
+                    { label: 'Yield Paid Out', value: fmt(health.totals.total_earned),       sub: `+ ${fmt(health.totals.total_referral_earnings)} referral earnings`, color: A.yellow },
+                    { label: 'Active Bots',    value: String(health.totals.active_bots),     sub: `${health.totalSessions} total sessions`, color: A.cyan },
+                  ].map(k => (
+                    <div key={k.label} className="rounded-2xl p-4" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                      <p className="text-[10px] font-semibold mb-2 uppercase tracking-wider" style={{ color: A.text3 }}>{k.label}</p>
+                      <p className="text-xl font-black mono" style={{ color: k.color }}>{k.value}</p>
+                      <p className="text-[10px] mt-1" style={{ color: A.text3 }}>{k.sub}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Daily Signups + Yield charts */}
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <div className="rounded-2xl p-4" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                    <p className="text-xs font-bold mb-4" style={{ color: A.text }}>Daily Signups — 30 days</p>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={chartData}>
+                        <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={A.brand} stopOpacity={0.3} /><stop offset="100%" stopColor={A.brand} stopOpacity={0} /></linearGradient></defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={A.border} />
+                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} width={24} allowDecimals={false} />
+                        <Tooltip contentStyle={{ background: A.bg3, border: `1px solid ${A.border}`, borderRadius: 8, fontSize: 11 }} labelStyle={{ color: A.text }} />
+                        <Area type="monotone" dataKey="signups" stroke={A.brand} fill="url(#sg)" strokeWidth={2} dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="rounded-2xl p-4" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                    <p className="text-xs font-bold mb-4" style={{ color: A.text }}>Daily Yield Paid — 30 days</p>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <AreaChart data={chartData}>
+                        <defs><linearGradient id="yg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={A.yellow} stopOpacity={0.3} /><stop offset="100%" stopColor={A.yellow} stopOpacity={0} /></linearGradient></defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={A.border} />
+                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} width={32} />
+                        <Tooltip contentStyle={{ background: A.bg3, border: `1px solid ${A.border}`, borderRadius: 8, fontSize: 11 }} labelStyle={{ color: A.text }} formatter={(v: number | undefined) => [`$${(v ?? 0).toFixed(2)}`, 'Yield']} />
+                        <Area type="monotone" dataKey="yield" stroke={A.yellow} fill="url(#yg)" strokeWidth={2} dot={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Deposits vs Withdrawals */}
+                <div className="rounded-2xl p-4" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                  <p className="text-xs font-bold mb-4" style={{ color: A.text }}>Deposits vs Withdrawals — 30 days</p>
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={chartData} barGap={2}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={A.border} />
+                      <XAxis dataKey="day" tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                      <YAxis tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} width={32} />
+                      <Tooltip contentStyle={{ background: A.bg3, border: `1px solid ${A.border}`, borderRadius: 8, fontSize: 11 }} labelStyle={{ color: A.text }} formatter={(v: number | undefined) => `$${(v ?? 0).toFixed(2)}`} />
+                      <Bar dataKey="deposits" fill={A.green} radius={[3, 3, 0, 0]} opacity={0.85} name="Deposits" />
+                      <Bar dataKey="withdrawals" fill={A.red} radius={[3, 3, 0, 0]} opacity={0.85} name="Withdrawals" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* VIP Distribution + Retention */}
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <div className="rounded-2xl p-4" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                    <p className="text-xs font-bold mb-4" style={{ color: A.text }}>VIP Distribution</p>
+                    <div className="space-y-2.5">
+                      {health.vipDistribution.map(v => {
+                        const total = health.vipDistribution.reduce((s, x) => s + x.count, 0);
+                        const w = total > 0 ? (v.count / total) * 100 : 0;
+                        return (
+                          <div key={v.vip_level}>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs font-semibold" style={{ color: VIP_COLOR[v.vip_level] || A.text2 }}>{v.vip_level}</span>
+                              <span className="text-xs mono" style={{ color: A.text2 }}>{v.count} users · {fmt(v.total_balance)}</span>
+                            </div>
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: A.bg4 }}>
+                              <div className="h-full rounded-full" style={{ width: `${w}%`, background: VIP_COLOR[v.vip_level] || A.brand }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl p-4 space-y-3" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                    <p className="text-xs font-bold" style={{ color: A.text }}>Retention & Activity</p>
+                    {[
+                      { label: 'Ran bot ≥1 day',  val: health.retention.day1,  color: A.brand },
+                      { label: 'Ran bot ≥7 days',  val: health.retention.day7,  color: A.cyan },
+                      { label: 'Ran bot ≥30 days', val: health.retention.day30, color: A.green },
+                    ].map(r => (
+                      <div key={r.label}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs" style={{ color: A.text2 }}>{r.label}</span>
+                          <span className="text-xs mono font-bold" style={{ color: r.color }}>{r.val} <span style={{ color: A.text3 }}>({pct(r.val, health.retention.total)})</span></span>
+                        </div>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: A.bg4 }}>
+                          <div className="h-full rounded-full" style={{ width: pct(r.val, health.retention.total), background: r.color }} />
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-2 grid grid-cols-2 gap-2" style={{ borderTop: `1px solid ${A.border}` }}>
+                      <div className="rounded-xl px-3 py-2" style={{ background: A.bg4 }}>
+                        <p className="text-[10px]" style={{ color: A.text3 }}>Pending W/D</p>
+                        <p className="text-sm font-black mono mt-0.5" style={{ color: health.pendingWithdrawals.c > 0 ? A.red : A.text3 }}>{health.pendingWithdrawals.c} <span className="text-[10px] font-normal">({fmt(health.pendingWithdrawals.s)})</span></p>
+                      </div>
+                      <div className="rounded-xl px-3 py-2" style={{ background: A.bg4 }}>
+                        <p className="text-[10px]" style={{ color: A.text3 }}>Net Flow (all time)</p>
+                        <p className="text-sm font-black mono mt-0.5" style={{ color: A.green }}>{fmt(health.totals.total_deposited - health.totals.total_withdrawn)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Earners */}
+                <div className="rounded-2xl overflow-hidden" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                  <div className="px-4 py-3" style={{ borderBottom: `1px solid ${A.border}`, background: A.bg3 }}>
+                    <p className="text-xs font-bold" style={{ color: A.text }}>Top 10 Earners</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs" style={{ minWidth: 600 }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${A.border}` }}>
+                          {['#', 'User', 'VIP', 'Balance', 'Total Earned', 'Deposited', 'Days Active'].map(h => (
+                            <th key={h} className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase" style={{ color: A.text3, background: A.bg3 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {health.topEarners.map((u, i) => (
+                          <tr key={u.id} style={{ borderBottom: `1px solid ${A.border}` }}
+                            onMouseEnter={e => (e.currentTarget.style.background = A.bg3)}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <td className="px-3 py-2.5 mono font-black text-sm" style={{ color: i < 3 ? A.yellow : A.text3 }}>#{i + 1}</td>
+                            <td className="px-3 py-2.5">
+                              <p className="font-semibold" style={{ color: A.text }}>{u.full_name}</p>
+                              <p className="text-[10px]" style={{ color: A.text3 }}>{u.email}</p>
+                            </td>
+                            <td className="px-3 py-2.5"><span className="text-[10px] font-bold" style={{ color: VIP_COLOR[u.vip_level] }}>{u.vip_level}</span></td>
+                            <td className="px-3 py-2.5 mono font-bold" style={{ color: A.green }}>{fmt(u.balance)}</td>
+                            <td className="px-3 py-2.5 mono font-bold" style={{ color: A.yellow }}>{fmt(u.total_earned)}</td>
+                            <td className="px-3 py-2.5 mono" style={{ color: A.text2 }}>{fmt(u.total_deposited)}</td>
+                            <td className="px-3 py-2.5 mono" style={{ color: A.cyan }}>{u.active_days}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Hourly bot activity today */}
+                {health.hourlyBots.length > 0 && (
+                  <div className="rounded-2xl p-4" style={{ background: A.card, border: `1px solid ${A.border}` }}>
+                    <p className="text-xs font-bold mb-4" style={{ color: A.text }}>Bot Sessions by Hour — Today</p>
+                    <ResponsiveContainer width="100%" height={120}>
+                      <BarChart data={health.hourlyBots}>
+                        <XAxis dataKey="hour" tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} tickFormatter={h => `${h}:00`} />
+                        <YAxis tick={{ fontSize: 9, fill: A.text3 }} tickLine={false} axisLine={false} width={20} allowDecimals={false} />
+                        <Tooltip contentStyle={{ background: A.bg3, border: `1px solid ${A.border}`, borderRadius: 8, fontSize: 11 }} labelStyle={{ color: A.text }} formatter={(v: number | undefined) => [v ?? 0, 'Sessions']} />
+                        <Bar dataKey="count" fill={A.cyan} radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </>);
+            })()}
           </div>
         )}
       </div>

@@ -318,4 +318,104 @@ router.post('/kyc/:id/reject', authenticateAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Platform health metrics ───────────────────────────────────────────────────
+router.get('/health', authenticateAdmin, (req, res) => {
+  // Daily signups last 30 days
+  const dailySignups = db.prepare(`
+    SELECT date(created_at) as day, COUNT(*) as count
+    FROM users
+    WHERE created_at >= date('now', '-30 days')
+    GROUP BY date(created_at)
+    ORDER BY day ASC
+  `).all();
+
+  // Daily yield earned last 30 days
+  const dailyYield = db.prepare(`
+    SELECT date(created_at) as day, COALESCE(SUM(amount),0) as amount
+    FROM transactions
+    WHERE type = 'yield' AND created_at >= date('now', '-30 days')
+    GROUP BY date(created_at)
+    ORDER BY day ASC
+  `).all();
+
+  // Daily deposits last 30 days
+  const dailyDeposits = db.prepare(`
+    SELECT date(created_at) as day, COALESCE(SUM(amount),0) as amount
+    FROM transactions
+    WHERE type = 'deposit' AND created_at >= date('now', '-30 days')
+    GROUP BY date(created_at)
+    ORDER BY day ASC
+  `).all();
+
+  // Daily withdrawals last 30 days
+  const dailyWithdrawals = db.prepare(`
+    SELECT date(created_at) as day, COALESCE(SUM(amount),0) as amount
+    FROM transactions
+    WHERE type = 'withdraw' AND created_at >= date('now', '-30 days')
+    GROUP BY date(created_at)
+    ORDER BY day ASC
+  `).all();
+
+  // VIP distribution
+  const vipDistribution = db.prepare(`
+    SELECT vip_level, COUNT(*) as count, COALESCE(SUM(balance),0) as total_balance
+    FROM users GROUP BY vip_level ORDER BY total_balance DESC
+  `).all();
+
+  // Top 10 earners
+  const topEarners = db.prepare(`
+    SELECT id, full_name, email, vip_level, balance, total_earned, total_deposited, active_days
+    FROM users ORDER BY total_earned DESC LIMIT 10
+  `).all();
+
+  // Top 10 by balance
+  const topBalances = db.prepare(`
+    SELECT id, full_name, email, vip_level, balance, total_earned
+    FROM users ORDER BY balance DESC LIMIT 10
+  `).all();
+
+  // Retention: users with >1 active day
+  const retention = db.prepare(`
+    SELECT
+      COUNT(*) as total,
+      COUNT(CASE WHEN active_days >= 1 THEN 1 END) as day1,
+      COUNT(CASE WHEN active_days >= 7 THEN 1 END) as day7,
+      COUNT(CASE WHEN active_days >= 30 THEN 1 END) as day30
+    FROM users
+  `).get();
+
+  // Hourly bot activity today
+  const hourlyBots = db.prepare(`
+    SELECT strftime('%H', started_at) as hour, COUNT(*) as count
+    FROM bot_sessions
+    WHERE date(started_at) = date('now')
+    GROUP BY hour ORDER BY hour ASC
+  `).all();
+
+  // Platform totals summary
+  const totals = db.prepare(`
+    SELECT
+      COUNT(*) as users,
+      COALESCE(SUM(balance),0) as total_balance,
+      COALESCE(SUM(total_deposited),0) as total_deposited,
+      COALESCE(SUM(total_withdrawn),0) as total_withdrawn,
+      COALESCE(SUM(total_earned),0) as total_earned,
+      COALESCE(SUM(referral_earnings),0) as total_referral_earnings,
+      COUNT(CASE WHEN bot_running=1 THEN 1 END) as active_bots,
+      COUNT(CASE WHEN date(created_at) = date('now') THEN 1 END) as new_today,
+      COUNT(CASE WHEN date(created_at) >= date('now','-7 days') THEN 1 END) as new_week
+    FROM users
+  `).get();
+
+  const totalSessions = db.prepare('SELECT COUNT(*) as c FROM bot_sessions').get().c;
+  const pendingWithdrawals = db.prepare("SELECT COUNT(*) as c, COALESCE(SUM(amount),0) as s FROM withdrawal_requests WHERE status='pending'").get();
+
+  res.json({
+    dailySignups, dailyYield, dailyDeposits, dailyWithdrawals,
+    vipDistribution, topEarners, topBalances,
+    retention, hourlyBots, totals, totalSessions,
+    pendingWithdrawals,
+  });
+});
+
 module.exports = router;
