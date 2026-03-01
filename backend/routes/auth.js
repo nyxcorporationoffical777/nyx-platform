@@ -36,33 +36,42 @@ router.post('/register', async (req, res) => {
     myCode = generateReferralCode();
   }
 
-  const verifyToken = crypto.randomBytes(32).toString('hex');
+  const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+  const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 min
 
-  const result = db.prepare(
+  db.prepare(
     'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified, email_verify_token) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
-  ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, verifyToken);
+  ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, `${otpCode}|${otpExpiry}`);
 
-  const appUrl = process.env.APP_URL || 'http://localhost:5173';
-  email.sendVerificationEmail(userEmail, full_name, `${appUrl}/verify-email?token=${verifyToken}`).catch(() => {});
+  email.sendOtpEmail(userEmail, full_name, otpCode).catch(() => {});
 
-  res.json({ needs_verification: true, message: 'Registration successful. Please check your email to verify your account.' });
+  res.json({ needs_verification: true, message: 'Registration successful. Check your email for the 6-digit code.' });
 });
 
-router.get('/verify-email', (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.status(400).json({ error: 'Invalid token' });
+// Verify OTP code
+router.post('/verify-otp', (req, res) => {
+  const { email: userEmail, code } = req.body;
+  if (!userEmail || !code) return res.status(400).json({ error: 'Email and code required' });
 
-  const user = db.prepare('SELECT id, email_verified FROM users WHERE email_verify_token = ?').get(token);
-  if (!user) return res.status(400).json({ error: 'Invalid or expired verification link' });
+  const user = db.prepare('SELECT id, email_verified, email_verify_token FROM users WHERE email = ?').get(userEmail);
+  if (!user) return res.status(404).json({ error: 'Account not found' });
+  if (user.email_verified) return res.json({ message: 'Already verified. You can log in.' });
 
-  if (user.email_verified) {
-    return res.json({ message: 'Email already verified. You can log in.' });
+  const stored = user.email_verify_token || '';
+  const [storedCode, expiry] = stored.split('|');
+
+  if (!storedCode || storedCode !== String(code).trim()) {
+    return res.status(400).json({ error: 'Invalid code. Please try again.' });
+  }
+  if (expiry && new Date(expiry) < new Date()) {
+    return res.status(400).json({ error: 'Code expired. Request a new one.' });
   }
 
   db.prepare('UPDATE users SET email_verified = 1, email_verify_token = NULL WHERE id = ?').run(user.id);
-  res.json({ message: 'Email verified successfully! You can now log in.' });
+  res.json({ message: 'Email verified! You can now log in.' });
 });
 
+// Resend OTP
 router.post('/resend-verification', async (req, res) => {
   const { email: userEmail } = req.body;
   if (!userEmail) return res.status(400).json({ error: 'Email required' });
@@ -71,13 +80,12 @@ router.post('/resend-verification', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Account not found' });
   if (user.email_verified) return res.status(400).json({ error: 'Email already verified' });
 
-  const verifyToken = crypto.randomBytes(32).toString('hex');
-  db.prepare('UPDATE users SET email_verify_token = ? WHERE id = ?').run(verifyToken, user.id);
+  const otpCode = String(Math.floor(100000 + Math.random() * 900000));
+  const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  db.prepare('UPDATE users SET email_verify_token = ? WHERE id = ?').run(`${otpCode}|${otpExpiry}`, user.id);
 
-  const appUrl = process.env.APP_URL || 'http://localhost:5173';
-  email.sendVerificationEmail(userEmail, user.full_name, `${appUrl}/verify-email?token=${verifyToken}`).catch(() => {});
-
-  res.json({ message: 'Verification email resent.' });
+  email.sendOtpEmail(userEmail, user.full_name, otpCode).catch(() => {});
+  res.json({ message: 'A new 6-digit code has been sent to your email.' });
 });
 
 router.post('/login', async (req, res) => {

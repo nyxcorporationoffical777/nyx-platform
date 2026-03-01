@@ -150,6 +150,19 @@ router.get('/referrals', authenticateToken, (req, res) => {
   });
 });
 
+router.put('/avatar', authenticateToken, (req, res) => {
+  const { avatar } = req.body;
+  if (!avatar) return res.status(400).json({ error: 'No avatar provided' });
+  if (typeof avatar !== 'string' || !avatar.startsWith('data:image/')) {
+    return res.status(400).json({ error: 'Invalid image format' });
+  }
+  if (avatar.length > 2 * 1024 * 1024) { // 2MB limit on base64
+    return res.status(400).json({ error: 'Image too large. Max 1.5MB.' });
+  }
+  db.prepare('UPDATE users SET avatar = ? WHERE id = ?').run(avatar, req.user.id);
+  res.json({ message: 'Avatar updated' });
+});
+
 router.get('/stats', authenticateToken, (req, res) => {
   const user = db.prepare(
     'SELECT balance, total_deposited, total_withdrawn, total_earned, referral_earnings, active_days FROM users WHERE id = ?'

@@ -102,6 +102,20 @@ exports.sendVerificationEmail = (to, name, verifyUrl) => sendEmail(to,
   `Verify your email: ${verifyUrl}`
 );
 
+exports.sendOtpEmail = (to, name, code) => sendEmail(to,
+  `Your ${BRAND_NAME} verification code: ${code}`,
+  `<h2>Email Verification Code</h2>
+   <p>Hi <span class="highlight">${name}</span>, thanks for registering!</p>
+   <p>Enter this 6-digit code to verify your account. It expires in <strong>15 minutes</strong>.</p>
+   <div style="text-align:center;margin:28px 0">
+     <div style="display:inline-block;background:#1e1e27;border:2px solid rgba(99,102,241,0.4);border-radius:16px;padding:20px 40px">
+       <span style="font-family:monospace;font-size:36px;font-weight:900;letter-spacing:12px;color:#f1f1f5">${code}</span>
+     </div>
+   </div>
+   <p style="font-size:12px;color:#52525e;text-align:center">This code expires in 15 minutes. If you didn't create an account, ignore this email.</p>`,
+  `Your ${BRAND_NAME} verification code is: ${code} (expires in 15 minutes)`
+);
+
 exports.sendWelcome = (to, name) => sendEmail(to,
   `Welcome to ${BRAND_NAME} 🎉`,
   `<h2>Welcome, ${name}!</h2>

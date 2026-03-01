@@ -62,6 +62,26 @@ export default function Profile() {
   const nextVip = user?.next_vip;
   const progress = nextVip ? Math.min(100, ((user?.balance || 0) / nextVip.minBalance) * 100) : 100;
 
+  // Avatar upload
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast('error', 'Image too large', 'Max file size is 2MB'); return; }
+    setAvatarLoading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        await api.put('/user/avatar', { avatar: base64 });
+        await refreshUser();
+        toast('success', 'Avatar Updated', 'Your profile picture has been changed.');
+        setAvatarLoading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch { toast('error', 'Upload Failed', 'Could not save avatar'); setAvatarLoading(false); }
+  };
+
   // Profile
   const [profileForm, setProfileForm] = useState({ full_name: user?.full_name || '' });
   const [profileMsg, setProfileMsg] = useState('');
@@ -281,13 +301,27 @@ export default function Profile() {
           {/* Profile card */}
           <div className="ex-card p-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded flex items-center justify-center text-sm font-bold text-black flex-shrink-0"
-                style={{ background: 'var(--yellow)' }}>
-                {user?.full_name?.charAt(0).toUpperCase()}
-              </div>
+              {/* Clickable avatar */}
+              <label className="relative cursor-pointer flex-shrink-0 group" title="Change photo">
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                {user?.avatar
+                  ? <img src={user.avatar} alt="avatar" className="w-12 h-12 rounded-full object-cover" style={{ border: `2px solid ${vipColor}` }} />
+                  : <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold text-black" style={{ background: vipColor }}>
+                      {user?.full_name?.charAt(0).toUpperCase()}
+                    </div>
+                }
+                <div className="absolute inset-0 rounded-full flex items-center justify-center transition-opacity opacity-0 group-hover:opacity-100"
+                  style={{ background: 'rgba(0,0,0,0.55)' }}>
+                  {avatarLoading
+                    ? <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
+                    : <Upload size={14} color="#fff" />
+                  }
+                </div>
+              </label>
               <div className="min-w-0">
                 <p className="font-semibold text-sm text-white truncate">{user?.full_name}</p>
                 <p className="text-xs truncate" style={{ color: 'var(--text3)' }}>{user?.email}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>Tap photo to change</p>
               </div>
             </div>
             <div className="flex items-center justify-between py-2" style={{ borderTop: '1px solid var(--border)' }}>

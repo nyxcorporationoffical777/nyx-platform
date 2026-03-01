@@ -1,29 +1,40 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Assets from './pages/Assets';
-import QuantBot from './pages/QuantBot';
-import Referrals from './pages/Referrals';
-import Profile from './pages/Profile';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import Help from './pages/Help';
-import Leaderboard from './pages/Leaderboard';
-import Markets from './pages/Markets';
-import TopUp from './pages/TopUp';
-import Wallet from './pages/Wallet';
-import Dashboard from './pages/Dashboard';
-import Staking from './pages/Staking';
-import Analytics from './pages/Analytics';
-import KYC from './pages/KYC';
-import Legal from './pages/Legal';
-import VerifyEmail from './pages/VerifyEmail';
-import RefLanding from './pages/RefLanding';
 import OnboardingTour from './components/OnboardingTour';
 import { ToastProvider } from './components/Toast';
+
+const Home          = lazy(() => import('./pages/Home'));
+const Login         = lazy(() => import('./pages/Login'));
+const Register      = lazy(() => import('./pages/Register'));
+const Assets        = lazy(() => import('./pages/Assets'));
+const QuantBot      = lazy(() => import('./pages/QuantBot'));
+const Referrals     = lazy(() => import('./pages/Referrals'));
+const Profile       = lazy(() => import('./pages/Profile'));
+const AdminLogin    = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminDashboard= lazy(() => import('./pages/admin/AdminDashboard'));
+const Help          = lazy(() => import('./pages/Help'));
+const Leaderboard   = lazy(() => import('./pages/Leaderboard'));
+const Markets       = lazy(() => import('./pages/Markets'));
+const TopUp         = lazy(() => import('./pages/TopUp'));
+const Wallet        = lazy(() => import('./pages/Wallet'));
+const Dashboard     = lazy(() => import('./pages/Dashboard'));
+const Staking       = lazy(() => import('./pages/Staking'));
+const Analytics     = lazy(() => import('./pages/Analytics'));
+const KYC           = lazy(() => import('./pages/KYC'));
+const Legal         = lazy(() => import('./pages/Legal'));
+const VerifyEmail   = lazy(() => import('./pages/VerifyEmail'));
+const RefLanding    = lazy(() => import('./pages/RefLanding'));
+const Rewards       = lazy(() => import('./pages/Rewards'));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(99,102,241,0.2)', borderTopColor: 'var(--brand-1)' }} />
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -65,6 +76,7 @@ function AppRoutes() {
         <Route path="/assets" element={<Assets />} />
         <Route path="/bot" element={<QuantBot />} />
         <Route path="/referrals" element={<Referrals />} />
+        <Route path="/rewards" element={<Rewards />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/help" element={<Help />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
@@ -88,8 +100,10 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
-          <AppRoutes />
-          <TourWrapper />
+          <Suspense fallback={<PageLoader />}>
+            <AppRoutes />
+            <TourWrapper />
+          </Suspense>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

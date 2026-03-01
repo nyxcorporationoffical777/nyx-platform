@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { TrendingUp, Eye, EyeOff, UserPlus, Shield, CheckCircle, Users, Zap, DollarSign, Lock, Mail } from 'lucide-react';
+import { TrendingUp, Eye, EyeOff, UserPlus, Shield, CheckCircle, Users, Zap, DollarSign, Lock, Mail, RefreshCw } from 'lucide-react';
 
 const TIERS_REG = [
   { label: 'Starter',  rate: '1.80%', color: '#6b7280', bal: '$100+' },
@@ -13,7 +13,19 @@ const TIERS_REG = [
 
 export default function Register() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm: '', referral_code: '' });
+  const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  // OTP state
+  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [countdown, setCountdown] = useState(0);
 
   useEffect(() => {
     const fromQuery = searchParams.get('ref');
@@ -24,11 +36,13 @@ export default function Register() {
       sessionStorage.removeItem('ref_code');
     }
   }, [searchParams]);
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [registered, setRegistered] = useState(false);
-  const [resent, setResent] = useState(false);
+
+  // Countdown timer for resend
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +57,8 @@ export default function Register() {
         password: form.password,
         referral_code: form.referral_code || undefined,
       });
-      setRegistered(true);
+      setStep('otp');
+      setCountdown(60);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -51,12 +66,65 @@ export default function Register() {
     }
   };
 
+  const handleOtpChange = (val: string, idx: number) => {
+    if (!/^[0-9]?$/.test(val)) return;
+    const next = [...otp];
+    next[idx] = val;
+    setOtp(next);
+    if (val && idx < 5) {
+      document.getElementById(`otp-${idx + 1}`)?.focus();
+    }
+    // Auto-submit when all filled
+    if (val && idx === 5) {
+      const code = [...next].join('');
+      if (code.length === 6) submitOtp(code);
+    }
+  };
+
+  const handleOtpKeyDown = (e: React.KeyboardEvent, idx: number) => {
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
+      document.getElementById(`otp-${idx - 1}`)?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (text.length === 6) {
+      setOtp(text.split(''));
+      submitOtp(text);
+    }
+  };
+
+  const submitOtp = async (code: string) => {
+    setOtpError('');
+    setOtpLoading(true);
+    try {
+      await api.post('/auth/verify-otp', { email: form.email, code });
+      navigate('/login?verified=1');
+    } catch (err: any) {
+      setOtpError(err.response?.data?.error || 'Invalid code');
+      setOtp(['', '', '', '', '', '']);
+      document.getElementById('otp-0')?.focus();
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const handleResend = async () => {
-    setResent(false);
+    setResendMsg('');
+    setResendLoading(true);
     try {
       await api.post('/auth/resend-verification', { email: form.email });
-      setResent(true);
-    } catch {}
+      setResendMsg('New code sent!');
+      setOtp(['', '', '', '', '', '']);
+      setCountdown(60);
+      document.getElementById('otp-0')?.focus();
+      setTimeout(() => setResendMsg(''), 4000);
+    } catch (err: any) {
+      setResendMsg(err.response?.data?.error || 'Failed to resend');
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -149,47 +217,79 @@ export default function Register() {
             <p className="font-black text-[14px] text-white tracking-[0.1em]">NYX</p>
           </div>
 
-          {registered ? (
-            <div className="text-center space-y-5">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-                style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)' }}>
-                <Mail size={28} style={{ color: 'var(--brand-1)' }} />
-              </div>
-              <div>
+          {step === 'otp' ? (
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)' }}>
+                  <Mail size={28} style={{ color: 'var(--brand-1)' }} />
+                </div>
                 <h1 className="font-bold text-white mb-2" style={{ fontSize: 22, letterSpacing: '-0.02em' }}>
-                  Check your inbox
+                  Enter verification code
                 </h1>
                 <p className="text-[14px] leading-relaxed" style={{ color: 'var(--text2)' }}>
-                  We sent a verification link to<br />
+                  We sent a 6-digit code to<br />
                   <span className="font-semibold text-white">{form.email}</span>
                 </p>
               </div>
-              <div className="rounded-xl p-4 text-left space-y-2"
-                style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
-                {['Check your spam/junk folder if not in inbox', 'Click the link in the email to activate', 'Link expires in 24 hours'].map(s => (
-                  <div key={s} className="flex items-center gap-2.5">
-                    <CheckCircle size={12} style={{ color: 'var(--green)', flexShrink: 0 }} />
-                    <span className="text-[12px]" style={{ color: 'var(--text2)' }}>{s}</span>
-                  </div>
+
+              {/* OTP boxes */}
+              <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+                {otp.map((val, idx) => (
+                  <input
+                    key={idx}
+                    id={`otp-${idx}`}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={val}
+                    onChange={e => handleOtpChange(e.target.value, idx)}
+                    onKeyDown={e => handleOtpKeyDown(e, idx)}
+                    autoFocus={idx === 0}
+                    className="w-11 h-14 rounded-xl text-center text-xl font-black mono text-white outline-none transition-all"
+                    style={{
+                      background: 'var(--bg3)',
+                      border: `2px solid ${val ? 'var(--brand-1)' : 'var(--border)'}`,
+                      caretColor: 'var(--brand-1)',
+                    }}
+                  />
                 ))}
               </div>
-              {resent && (
-                <div className="text-[12px] px-3 py-2 rounded-lg"
-                  style={{ background: 'rgba(16,185,129,0.08)', color: 'var(--green)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  Verification email resent!
+
+              {otpError && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-[13px]"
+                  style={{ background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.2)', color: 'var(--red)' }}>
+                  <Shield size={13} className="flex-shrink-0" /> {otpError}
                 </div>
               )}
-              <button onClick={handleResend}
-                className="w-full py-3 rounded-xl text-[13px] font-medium transition-all"
-                style={{ background: 'var(--bg3)', color: 'var(--text2)', border: '1px solid var(--border)' }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border2)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-                Resend verification email
+
+              <button
+                onClick={() => submitOtp(otp.join(''))}
+                disabled={otp.join('').length < 6 || otpLoading}
+                className="btn-yellow w-full py-3.5 rounded-xl flex items-center justify-center gap-2 text-[14px] font-bold disabled:opacity-50">
+                {otpLoading
+                  ? <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.25)', borderTopColor: '#fff' }} />
+                  : <><CheckCircle size={15} /> Verify &amp; Activate Account</>}
               </button>
-              <Link to="/login" className="block text-center text-[13px] font-medium transition-colors"
-                style={{ color: 'var(--brand-1)' }}>
-                Already verified? Sign in →
-              </Link>
+
+              <div className="text-center space-y-2">
+                {resendMsg && (
+                  <p className="text-[12px]" style={{ color: resendMsg.includes('sent') ? 'var(--green)' : 'var(--red)' }}>
+                    {resendMsg}
+                  </p>
+                )}
+                <button
+                  onClick={handleResend}
+                  disabled={countdown > 0 || resendLoading}
+                  className="flex items-center gap-1.5 mx-auto text-[13px] font-medium transition-colors disabled:opacity-40"
+                  style={{ color: 'var(--brand-1)' }}>
+                  {resendLoading
+                    ? <RefreshCw size={12} className="animate-spin" />
+                    : <RefreshCw size={12} />}
+                  {countdown > 0 ? `Resend in ${countdown}s` : 'Resend code'}
+                </button>
+                <p className="text-[11px]" style={{ color: 'var(--text3)' }}>Check spam folder if not received</p>
+              </div>
             </div>
           ) : (
           <>

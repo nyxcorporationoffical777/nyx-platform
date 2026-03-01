@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Wallet, Bot, Users, TrendingUp, LogOut, HelpCircle, BarChart2,
-  Trophy, CreditCard, Settings,
+  Trophy, CreditCard, Settings, Gift,
   ArrowLeftRight, LayoutDashboard, ChevronUp, Lock, LineChart, X, BadgeCheck, Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ const NAV = [
   { section: 'Earn', items: [
     { to: '/bot',         icon: Bot,     label: 'Quant Engine', dot: 'bot'  },
     { to: '/staking',     icon: Lock,    label: 'Staking',      dot: '' },
+    { to: '/rewards',     icon: Gift,    label: 'Rewards',      dot: '' },
     { to: '/leaderboard', icon: Trophy,  label: 'Leaderboard',  dot: '' },
     { to: '/referrals',   icon: Users,   label: 'Referrals',    dot: '' },
   ]},
@@ -100,10 +101,12 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
             (e.currentTarget as HTMLElement).style.background = 'var(--bg3)';
           }}>
           {/* Avatar */}
-          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white"
-            style={{ background: vipColor }}>
-            {user?.full_name?.charAt(0).toUpperCase()}
-          </div>
+          {user?.avatar
+            ? <img src={user.avatar} alt="avatar" className="w-9 h-9 rounded-full object-cover flex-shrink-0" style={{ border: `2px solid ${vipColor}` }} />
+            : <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 text-white" style={{ background: vipColor }}>
+                {user?.full_name?.charAt(0).toUpperCase()}
+              </div>
+          }
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-semibold text-white truncate leading-tight">
               {user?.full_name?.split(' ')[0]}

@@ -16,6 +16,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/kyc': 'KYC Verification',
   '/legal': 'Legal & Terms of Service',
   '/profile': 'Settings', '/help': 'Help', '/topup': 'Buy Crypto',
+  '/rewards': 'Rewards Center',
 };
 
 const NOTIF_ICON: Record<string, React.ReactNode> = {
@@ -225,10 +226,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
             }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
-              style={{ background: vipColor }}>
-              {user?.full_name?.charAt(0).toUpperCase()}
-            </div>
+            {user?.avatar
+              ? <img src={user.avatar} alt="av" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
+              : <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0" style={{ background: vipColor }}>
+                  {user?.full_name?.charAt(0).toUpperCase()}
+                </div>
+            }
             <div className="hidden sm:block text-left">
               <p className="text-[12px] font-semibold text-white leading-none">
                 {user?.full_name?.split(' ')[0]}
@@ -248,10 +251,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
               {/* User info */}
               <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
-                    style={{ background: vipColor }}>
-                    {user?.full_name?.charAt(0).toUpperCase()}
-                  </div>
+                  {user?.avatar
+                    ? <img src={user.avatar} alt="av" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                    : <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: vipColor }}>
+                        {user?.full_name?.charAt(0).toUpperCase()}
+                      </div>
+                  }
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold text-white truncate">{user?.full_name}</p>
                     <p className="text-[11px] truncate mt-0.5" style={{ color: 'var(--text3)' }}>{user?.email}</p>
