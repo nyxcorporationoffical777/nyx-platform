@@ -37,21 +37,11 @@ router.post('/register', async (req, res) => {
       myCode = generateReferralCode();
     }
 
-    const otpCode = String(Math.floor(100000 + Math.random() * 900000));
-    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
-    console.log(`[register] inserting user: ${userEmail}`);
     db.prepare(
-      'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified, email_verify_token) VALUES (?, ?, ?, ?, ?, ?, 0, ?)'
-    ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by, `${otpCode}|${otpExpiry}`);
-    console.log(`[register] user saved: ${userEmail}`);
+      'INSERT INTO users (full_name, email, password, vip_level, referral_code, referred_by, email_verified) VALUES (?, ?, ?, ?, ?, ?, 1)'
+    ).run(full_name, userEmail, hashed, vip.name, myCode, referred_by);
 
-    // Send OTP async — do NOT await so registration never hangs on SMTP
-    email.sendOtpEmail(userEmail, full_name, otpCode)
-      .then(() => console.log(`[register] OTP sent to ${userEmail}`))
-      .catch(e => console.error(`[register] OTP email error: ${e.message}`));
-
-    res.json({ needs_verification: true, message: 'Registration successful. Check your email for the 6-digit code.' });
+    res.json({ message: 'Registration successful! You can now log in.' });
   } catch (e) {
     console.error('[register] ERROR:', e.message, e.stack);
     res.status(500).json({ error: 'Registration failed. Please try again.' });

@@ -18,8 +18,7 @@ export default function Register() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  // OTP state
-  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [step] = useState<'form' | 'otp'>('form');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpError, setOtpError] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
@@ -57,8 +56,7 @@ export default function Register() {
         password: form.password,
         referral_code: form.referral_code || undefined,
       });
-      setStep('otp');
-      setCountdown(60);
+      navigate('/login?registered=1');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {

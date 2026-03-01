@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { TrendingUp, Eye, EyeOff, Lock, Shield, CheckCircle, ArrowRight, Mail } from 'lucide-react';
@@ -15,6 +15,8 @@ const TIERS = [
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const justRegistered = searchParams.get('registered') === '1';
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
@@ -158,6 +160,13 @@ export default function Login() {
               </Link>
             </p>
           </div>
+
+          {justRegistered && (
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-4 text-[13px]"
+              style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', color: 'var(--green)' }}>
+              <CheckCircle size={14} className="flex-shrink-0" /> Account created! Sign in below.
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl mb-6 text-[13px]"
