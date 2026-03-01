@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { TrendingUp, Eye, EyeOff, UserPlus, Shield, CheckCircle, Users, Zap, DollarSign, Lock, Mail } from 'lucide-react';
 
@@ -12,7 +12,18 @@ const TIERS_REG = [
 ];
 
 export default function Register() {
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm: '', referral_code: '' });
+
+  useEffect(() => {
+    const fromQuery = searchParams.get('ref');
+    const fromSession = sessionStorage.getItem('ref_code');
+    const code = (fromQuery || fromSession || '').toUpperCase();
+    if (code) {
+      setForm(f => ({ ...f, referral_code: code }));
+      sessionStorage.removeItem('ref_code');
+    }
+  }, [searchParams]);
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

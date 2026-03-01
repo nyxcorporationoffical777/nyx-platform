@@ -21,6 +21,7 @@ import Analytics from './pages/Analytics';
 import KYC from './pages/KYC';
 import Legal from './pages/Legal';
 import VerifyEmail from './pages/VerifyEmail';
+import RefLanding from './pages/RefLanding';
 import OnboardingTour from './components/OnboardingTour';
 import { ToastProvider } from './components/Toast';
 
@@ -58,6 +59,7 @@ function AppRoutes() {
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/ref/:code" element={<RefLanding />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/assets" element={<Assets />} />
