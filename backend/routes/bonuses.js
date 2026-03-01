@@ -328,7 +328,7 @@ router.get('/', authenticateToken, (req, res) => {
 
   const bonuses = Object.values(BONUS_DEFS).map(def => {
     const claimRow = claimedMap[def.id];
-    const amount = def.calcAmount ? def.calcAmount(user) : def.amount;
+    const amount = def.calcAmount ? (user ? def.calcAmount(user) : 0) : def.amount;
     return {
       ...def,
       amount,
@@ -338,7 +338,7 @@ router.get('/', authenticateToken, (req, res) => {
     };
   });
 
-  res.json({ bonuses, user: { vip_level: user.vip_level, total_deposited: user.total_deposited, active_days: user.active_days } });
+  res.json({ bonuses, user: user ? { vip_level: user.vip_level, total_deposited: user.total_deposited, active_days: user.active_days } : null });
 });
 
 // POST /bonuses/check — auto-award any newly eligible bonuses (called after deposit/bot stop)
@@ -395,14 +395,18 @@ router.get('/missions', authenticateToken, (req, res) => {
     const claimed = !!(claimRow?.claimed);
 
     // Upsert progress (not claimed status — that's done at claim time)
-    db.prepare(`
-      INSERT INTO user_missions (user_id, mission_id, progress, completed, period, updated_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-      ON CONFLICT(user_id, mission_id, period) DO UPDATE SET
-        progress=excluded.progress,
-        completed=excluded.completed,
-        updated_at=excluded.updated_at
-    `).run(userId, def.id, progress, completed ? 1 : 0, period);
+    try {
+      db.prepare(`
+        INSERT INTO user_missions (user_id, mission_id, progress, completed, period, updated_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(user_id, mission_id, period) DO UPDATE SET
+          progress=excluded.progress,
+          completed=excluded.completed,
+          updated_at=excluded.updated_at
+      `).run(userId, def.id, progress, completed ? 1 : 0, period);
+    } catch (e) {
+      // Ignore FK errors (stale JWT / user deleted)
+    }
 
     return {
       ...def,
@@ -465,12 +469,16 @@ router.post('/missions/mark-visit', authenticateToken, (req, res) => {
   const userId = req.user.id;
   const period = getDayPeriod();
 
-  db.prepare(`
-    INSERT INTO user_missions (user_id, mission_id, progress, completed, period, updated_at)
-    VALUES (?, 'daily_check_markets', 1, 1, ?, datetime('now'))
-    ON CONFLICT(user_id, mission_id, period) DO UPDATE SET
-      progress=1, completed=1, updated_at=datetime('now')
-  `).run(userId, period);
+  try {
+    db.prepare(`
+      INSERT INTO user_missions (user_id, mission_id, progress, completed, period, updated_at)
+      VALUES (?, 'daily_check_markets', 1, 1, ?, datetime('now'))
+      ON CONFLICT(user_id, mission_id, period) DO UPDATE SET
+        progress=1, completed=1, updated_at=datetime('now')
+    `).run(userId, period);
+  } catch (e) {
+    // Ignore FK errors
+  }
 
   res.json({ ok: true });
 });

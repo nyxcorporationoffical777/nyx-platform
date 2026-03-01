@@ -8,7 +8,7 @@ router.get('/', authenticateToken, (req, res) => {
   const top = db.prepare(`
     SELECT
       id,
-      substr(full_name,1,1) || repeat('*', max(length(full_name)-2,1)) || substr(full_name,-1,1) AS display_name,
+      full_name,
       vip_level,
       total_earned,
       total_deposited,
@@ -22,7 +22,9 @@ router.get('/', authenticateToken, (req, res) => {
   // Mark which entry is the current user
   const result = top.map((u, i) => ({
     rank: i + 1,
-    display_name: u.display_name,
+    display_name: u.full_name
+      ? u.full_name.charAt(0) + '*'.repeat(Math.max(u.full_name.length - 2, 1)) + u.full_name.slice(-1)
+      : 'Anonymous',
     vip_level: u.vip_level,
     total_earned: u.total_earned,
     total_deposited: u.total_deposited,
