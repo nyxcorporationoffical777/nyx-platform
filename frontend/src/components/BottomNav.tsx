@@ -56,7 +56,7 @@ export default function BottomNav() {
 
       {/* More drawer — slides up from bottom */}
       <div className={`lg:hidden fixed left-0 right-0 z-50 rounded-t-2xl overflow-hidden transition-transform duration-300 ${
-        drawerOpen ? 'translate-y-0' : 'translate-y-full'
+        drawerOpen ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
       }`}
         style={{
           bottom: 60,
@@ -109,7 +109,7 @@ export default function BottomNav() {
       </div>
 
       {/* Bottom tab bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-stretch"
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch"
         style={{
           background: 'var(--bg2)',
           borderTop: '1px solid var(--border)',
