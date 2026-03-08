@@ -117,7 +117,7 @@ export default function Wallet() {
   }
 
   return (
-    <div className="p-4 space-y-4 fade-in">
+    <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 fade-in">
       {/* ── Header ── */}
       <div className="rounded-2xl p-4"
         style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
@@ -144,7 +144,7 @@ export default function Wallet() {
       </div>
 
       {/* Asset pills */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+      <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2">
         {assets.map(a => {
           const color = ASSET_COLORS[a.asset] || '#8b8b9a';
           const isSelected = selectedAsset?.asset === a.asset && tab === 'portfolio';
@@ -177,7 +177,7 @@ export default function Wallet() {
       <div className="flex gap-1.5">
         {(['portfolio', 'transactions', 'convert'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className="px-4 py-2 rounded-lg text-xs font-medium transition-all"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs font-medium transition-all"
             style={tab === t
               ? { background: 'var(--bg4)', color: 'var(--text)', border: '1px solid var(--border2)' }
               : { background: 'transparent', color: 'var(--text3)', border: '1px solid var(--border)' }}
@@ -190,7 +190,7 @@ export default function Wallet() {
 
       {/* Portfolio tab */}
       {tab === 'portfolio' && selectedAsset && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
           {/* Asset detail card */}
           <div className="ex-card p-5 space-y-4">
             <div className="flex items-center gap-3">

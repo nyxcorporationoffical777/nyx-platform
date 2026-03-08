@@ -87,14 +87,14 @@ export default function Dashboard() {
   const greeting = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="p-5 space-y-4 fade-in max-w-[1400px] mx-auto">
+    <div className="p-3 sm:p-5 space-y-4 fade-in max-w-[1400px] mx-auto">
 
       {/* ══════ HERO — balance + KPIs ══════ */}
       <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
         <div className="flex flex-col lg:flex-row lg:items-stretch lg:justify-between gap-0">
 
           {/* Left — main balance */}
-          <div className="p-6 flex-1 fade-in-up">
+          <div className="p-4 sm:p-6 flex-1 fade-in-up">
             <div className="flex items-center gap-2 mb-3">
               <span className="live-dot" />
               <p className="text-[12px]" style={{ color: 'var(--text3)' }}>
@@ -122,7 +122,7 @@ export default function Dashboard() {
 
             {/* VIP progress */}
             {user?.vip_level !== 'Diamond' && (
-              <div className="mt-5 max-w-[280px]">
+              <div className="mt-4 max-w-full sm:max-w-[280px]">
                 <div className="flex justify-between mb-1.5" style={{ fontSize: 11, color: 'var(--text3)' }}>
                   <span style={{ color: vipColor, fontWeight: 700 }}>{user?.vip_level}</span>
                   <span>${(user?.balance ?? 0).toFixed(0)} / ${nextMin.toLocaleString()} → next tier</span>
@@ -135,7 +135,7 @@ export default function Dashboard() {
           </div>
 
           {/* Right — sparkline + quick stats */}
-          <div className="lg:w-72 flex flex-col border-t lg:border-t-0 lg:border-l" style={{ borderColor: 'var(--border)' }}>
+          <div className="hidden sm:flex lg:w-72 flex-col border-t lg:border-t-0 lg:border-l" style={{ borderColor: 'var(--border)' }}>
             <div className="px-5 pt-4 pb-2">
               <p className="section-label mb-2">7-day trend</p>
               <ResponsiveContainer width="100%" height={60}>
@@ -176,14 +176,14 @@ export default function Dashboard() {
       {/* ══════ QUICK ACTIONS ══════ */}
       <div className="fade-in-up-1">
         <p className="section-label mb-3">Quick Actions</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
             { label: 'Deposit',    sub: 'Add USDT',     icon: ArrowDownLeft,    color: 'var(--green)',   path: '/assets' },
             { label: 'Auto Earn',  sub: 'Quant Engine', icon: Bot,              color: 'var(--yellow)',  path: '/bot'    },
             { label: 'Buy Crypto', sub: 'Top up',       icon: CreditCard,       color: 'var(--cyan)',    path: '/topup'  },
           ].map(a => (
             <button key={a.path} onClick={() => navigate(a.path)}
-              className="flex items-center gap-3 p-4 rounded-xl text-left transition-all"
+              className="flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl text-left transition-all"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLElement).style.background = 'var(--bg3)';
@@ -193,13 +193,13 @@ export default function Dashboard() {
                 (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)';
                 (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
               }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: 'var(--bg4)', border: '1px solid var(--border)' }}>
-                <a.icon size={17} style={{ color: a.color }} strokeWidth={1.8} />
+                <a.icon size={16} style={{ color: a.color }} strokeWidth={1.8} />
               </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-white">{a.label}</p>
-                <p className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>{a.sub}</p>
+              <div className="min-w-0 text-center sm:text-left">
+                <p className="text-[12px] sm:text-[13px] font-semibold text-white">{a.label}</p>
+                <p className="text-[10px] sm:text-[11px] mt-0.5 hidden sm:block" style={{ color: 'var(--text3)' }}>{a.sub}</p>
               </div>
             </button>
           ))}
@@ -209,7 +209,7 @@ export default function Dashboard() {
       {/* ══════ PLATFORM MODULES ══════ */}
       <div className="fade-in-up-2">
         <p className="section-label mb-3">Platform</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
           {[
             { title: 'Wallet',       sub: 'Multi-asset portfolio', icon: Wallet,           color: 'var(--green)',   path: '/wallet',      stat: `$${totalUsd.toFixed(2)}`,           label: 'Portfolio value' },
             { title: 'Quant Engine', sub: 'Automated yield',       icon: Bot,              color: 'var(--yellow)',  path: '/bot',         stat: user?.bot_running ? 'Running' : 'Idle', label: `${((user?.vip_info?.dailyRate ?? 0.018)*100).toFixed(2)}%/day` },
@@ -218,7 +218,7 @@ export default function Dashboard() {
             { title: 'Leaderboard',  sub: 'Missions & rewards',    icon: Trophy,           color: 'var(--orange)',  path: '/leaderboard', stat: `${user?.active_days??0}d`,          label: 'Active streak' },
           ].map((card, ci) => (
             <button key={card.path} onClick={() => navigate(card.path)}
-              className={`group text-left rounded-2xl p-5 transition-all card-enter-${ci + 1}`}
+              className={`group text-left rounded-2xl p-3 sm:p-5 transition-all card-enter-${ci + 1}`}
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLElement).style.background = 'var(--bg3)';
@@ -237,17 +237,17 @@ export default function Dashboard() {
                   className="opacity-0 group-hover:opacity-40 transition-opacity mt-1"
                   style={{ color: 'var(--text3)' }} />
               </div>
-              <p className="text-[14px] font-semibold text-white">{card.title}</p>
-              <p className="text-[12px] mt-0.5 mb-4" style={{ color: 'var(--text3)' }}>{card.sub}</p>
-              <p className="mono font-bold text-[16px]" style={{ color: card.color }}>{card.stat}</p>
-              <p className="text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>{card.label}</p>
+              <p className="text-[13px] sm:text-[14px] font-semibold text-white">{card.title}</p>
+              <p className="text-[11px] sm:text-[12px] mt-0.5 mb-2 sm:mb-4 hidden sm:block" style={{ color: 'var(--text3)' }}>{card.sub}</p>
+              <p className="mono font-bold text-[14px] sm:text-[16px] mt-1" style={{ color: card.color }}>{card.stat}</p>
+              <p className="text-[10px] sm:text-[11px] mt-0.5" style={{ color: 'var(--text3)' }}>{card.label}</p>
             </button>
           ))}
         </div>
       </div>
 
       {/* ══════ DATA PANELS ══════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 fade-in-up-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 fade-in-up-3">
 
         {/* ── Live Prices ── */}
         <div className="ex-card overflow-hidden">

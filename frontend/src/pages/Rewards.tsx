@@ -89,7 +89,7 @@ export default function Rewards() {
   const totalPotential = missions.filter(m => !m.claimed).reduce((s, m) => s + m.reward, 0);
 
   return (
-    <div className="p-4 space-y-4 fade-in min-w-0 w-full">
+    <div className="p-3 sm:p-4 space-y-4 fade-in min-w-0 w-full">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

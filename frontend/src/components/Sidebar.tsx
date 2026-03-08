@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Wallet, Bot, Users, TrendingUp, LogOut, HelpCircle, BarChart2,
   Trophy, CreditCard, Settings, Gift,
-  ArrowLeftRight, LayoutDashboard, ChevronUp, Lock, LineChart, X, BadgeCheck, Scale,
+  ArrowLeftRight, LayoutDashboard, ChevronUp, Lock, LineChart, BadgeCheck, Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -41,9 +41,7 @@ const VIP_NEXT: Record<string, number> = {
   Starter: 500, Silver: 2000, Gold: 5000, Platinum: 10000, Diamond: 10000,
 };
 
-interface SidebarProps { open?: boolean; onClose?: () => void; }
-
-export default function Sidebar({ open = false, onClose }: SidebarProps) {
+export default function Sidebar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const vipColor = VIP_COLOR[user?.vip_level || 'Starter'];
@@ -61,9 +59,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-full w-56 flex flex-col z-40 transition-transform duration-300 ease-in-out ${
-        open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}
+      className="hidden lg:flex fixed left-0 top-0 h-full w-56 flex-col z-40"
       style={{ background: 'var(--bg2)', borderRight: '1px solid var(--border)' }}
     >
       {/* ─── Logo bar ─── */}
@@ -78,13 +74,6 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
           <p className="text-[9px] font-medium tracking-[0.08em] uppercase"
             style={{ color: 'var(--text3)' }}>Wealth Platform</p>
         </div>
-        {/* Mobile close button */}
-        <button onClick={onClose} className="lg:hidden p-1 rounded-lg transition-colors"
-          style={{ color: 'var(--text3)' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}>
-          <X size={16} />
-        </button>
       </div>
 
       {/* ─── User card ─── */}
@@ -154,7 +143,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
             <p className="section-label px-3 mb-1.5">{section}</p>
             <div className="space-y-px">
               {items.map(({ to, icon: Icon, label, dot }) => (
-                <NavLink key={to} to={to} onClick={onClose}>
+                <NavLink key={to} to={to}>
                   {({ isActive }) => (
                     <div className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
                       style={isActive

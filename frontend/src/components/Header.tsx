@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Bell, Zap, DollarSign, ArrowDownLeft, ArrowUpRight, CheckCheck, Trash2, X, Settings, ChevronDown, Menu } from 'lucide-react';
+import { LogOut, Bell, Zap, DollarSign, ArrowDownLeft, ArrowUpRight, CheckCheck, Trash2, X, Settings, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/axios';
@@ -30,9 +30,7 @@ interface Notification {
   id: number; type: string; title: string; message: string; read: number; created_at: string;
 }
 
-interface HeaderProps { onMenuClick?: () => void; }
-
-export default function Header({ onMenuClick }: HeaderProps) {
+export default function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -82,22 +80,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-[60px] flex items-center justify-between px-6"
+    <header className="sticky top-0 z-30 h-[60px] flex items-center justify-between px-3 sm:px-6"
       style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
 
-      {/* ── Left: hamburger + page title ── */}
+      {/* ── Left: logo (mobile) + page title ── */}
       <div className="flex items-center gap-3">
-        {/* Mobile hamburger */}
-        <button onClick={onMenuClick}
-          className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-all"
-          style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text2)' }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border2)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}>
-          <Menu size={16} strokeWidth={1.8} />
-        </button>
-        <h1 className="text-[15px] font-semibold text-white tracking-[-0.02em]">{pageTitle}</h1>
+        {/* Mobile logo */}
+        <div className="lg:hidden w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: 'var(--brand-1)' }}>
+          <span className="text-white font-black text-[10px] tracking-wider">N</span>
+        </div>
+        <h1 className="text-[15px] font-semibold text-white tracking-[-0.02em] truncate max-w-[140px] sm:max-w-none">{pageTitle}</h1>
         {user?.bot_running && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full"
             style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
             <span className="w-1.5 h-1.5 rounded-full blink" style={{ background: 'var(--green)', display: 'block' }} />
             <span style={{ color: 'var(--green)', fontSize: 11, fontWeight: 600 }}>Bot Running</span>
@@ -148,7 +143,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
           {/* Notification dropdown */}
           {bellOpen && (
-            <div className="absolute right-0 mt-2 w-80 rounded-2xl overflow-hidden z-50 fade-in panel">
+            <div className="fixed sm:absolute right-0 sm:right-0 left-2 sm:left-auto top-[62px] sm:top-auto sm:mt-2 mx-0 sm:w-80 rounded-2xl overflow-hidden z-50 fade-in panel">
               <div className="flex items-center justify-between px-4 py-3"
                 style={{ borderBottom: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-2">
@@ -247,7 +242,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
           {/* Profile dropdown */}
           {profileOpen && (
-            <div className="absolute right-0 mt-2 w-64 rounded-2xl overflow-hidden z-50 fade-in panel">
+            <div className="fixed sm:absolute right-2 sm:right-0 left-2 sm:left-auto top-[62px] sm:top-auto sm:mt-2 sm:w-64 rounded-2xl overflow-hidden z-50 fade-in panel">
               {/* User info */}
               <div className="px-4 pt-4 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-3 mb-3">

@@ -58,7 +58,7 @@ export default function Referrals() {
   const commPct = (commissionRate * 100).toFixed(0);
 
   return (
-    <div className="p-6 space-y-5 min-w-0 w-full fade-in">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-5 min-w-0 w-full fade-in">
       <div>
         <p className="section-label mb-1.5">Growth</p>
         <h1 className="font-bold text-white" style={{ fontSize: 22, letterSpacing: '-0.025em' }}>Referrals</h1>
@@ -68,7 +68,7 @@ export default function Referrals() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: 'Total Referrals',   value: referrals.length,                suffix: ' users',  color: 'var(--yellow)', tip: 'Total number of users who registered using your referral code or link.' },
           { label: 'Active Referrals',  value: referrals.filter(r => r.total_deposited > 0).length, suffix: ' active', color: 'var(--green)', tip: 'Referrals who have made at least one deposit and are actively using the platform.' },
@@ -170,48 +170,91 @@ export default function Referrals() {
           </div>
         ) : (
           <>
-            <table className="w-full text-xs">
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
-                  {['User', 'VIP', 'Deposited', 'Their Earnings', 'Your Commission', 'Joined'].map(h => (
-                    <th key={h} className="px-4 py-2.5 text-left font-medium" style={{ color: 'var(--text3)' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {referrals.map(ref => {
-                  const myComm = ref.total_earned * commissionRate;
-                  const vc = VIP_COLOR[ref.vip_level] || '#848e9c';
-                  return (
-                    <tr key={ref.id} className="ex-row">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-black flex-shrink-0"
-                            style={{ background: 'var(--yellow)' }}>
-                            {ref.full_name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">{ref.full_name}</p>
-                            <p className="text-xs" style={{ color: 'var(--text3)' }}>{ref.email}</p>
-                          </div>
+            {/* Mobile card list */}
+            <div className="sm:hidden divide-y" style={{ borderColor: 'var(--border)' }}>
+              {referrals.map(ref => {
+                const myComm = ref.total_earned * commissionRate;
+                const vc = VIP_COLOR[ref.vip_level] || '#848e9c';
+                return (
+                  <div key={ref.id} className="px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-black flex-shrink-0"
+                          style={{ background: 'var(--yellow)' }}>
+                          {ref.full_name.charAt(0).toUpperCase()}
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1 font-semibold" style={{ color: vc }}>
-                          <Star size={10} />{ref.vip_level}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 mono font-medium text-white">${ref.total_deposited.toFixed(2)}</td>
-                      <td className="px-4 py-3 mono" style={{ color: 'var(--green)' }}>${ref.total_earned.toFixed(4)}</td>
-                      <td className="px-4 py-3 mono font-bold" style={{ color: 'var(--yellow)' }}>+${myComm.toFixed(4)}</td>
-                      <td className="px-4 py-3" style={{ color: 'var(--text3)' }}>
-                        {new Date(ref.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <div>
+                          <p className="text-xs font-semibold text-white">{ref.full_name}</p>
+                          <span className="text-[10px] font-semibold" style={{ color: vc }}>{ref.vip_level}</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px]" style={{ color: 'var(--text3)' }}>
+                        {new Date(ref.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-lg px-2 py-1.5" style={{ background: 'var(--bg3)' }}>
+                        <p className="text-[9px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text3)' }}>Deposited</p>
+                        <p className="mono text-[11px] font-bold text-white">${ref.total_deposited.toFixed(0)}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5" style={{ background: 'var(--bg3)' }}>
+                        <p className="text-[9px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text3)' }}>Earned</p>
+                        <p className="mono text-[11px] font-bold" style={{ color: 'var(--green)' }}>${ref.total_earned.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-lg px-2 py-1.5" style={{ background: 'var(--bg3)' }}>
+                        <p className="text-[9px] uppercase tracking-wider mb-0.5" style={{ color: 'var(--text3)' }}>Your Cut</p>
+                        <p className="mono text-[11px] font-bold" style={{ color: 'var(--yellow)' }}>+${myComm.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
+                    {['User', 'VIP', 'Deposited', 'Their Earnings', 'Your Commission', 'Joined'].map(h => (
+                      <th key={h} className="px-4 py-2.5 text-left font-medium" style={{ color: 'var(--text3)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {referrals.map(ref => {
+                    const myComm = ref.total_earned * commissionRate;
+                    const vc = VIP_COLOR[ref.vip_level] || '#848e9c';
+                    return (
+                      <tr key={ref.id} className="ex-row">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-black flex-shrink-0"
+                              style={{ background: 'var(--yellow)' }}>
+                              {ref.full_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">{ref.full_name}</p>
+                              <p className="text-xs" style={{ color: 'var(--text3)' }}>{ref.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="flex items-center gap-1 font-semibold" style={{ color: vc }}>
+                            <Star size={10} />{ref.vip_level}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 mono font-medium text-white">${ref.total_deposited.toFixed(2)}</td>
+                        <td className="px-4 py-3 mono" style={{ color: 'var(--green)' }}>${ref.total_earned.toFixed(4)}</td>
+                        <td className="px-4 py-3 mono font-bold" style={{ color: 'var(--yellow)' }}>+${myComm.toFixed(4)}</td>
+                        <td className="px-4 py-3" style={{ color: 'var(--text3)' }}>
+                          {new Date(ref.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             <div className="flex items-center gap-2 px-4 py-3" style={{ borderTop: '1px solid var(--border)', background: 'var(--bg3)' }}>
               <TrendingUp size={12} style={{ color: 'var(--yellow)' }} />
               <span className="text-xs" style={{ color: 'var(--text3)' }}>Total commission earned:</span>

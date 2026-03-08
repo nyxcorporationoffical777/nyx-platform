@@ -104,7 +104,7 @@ export default function Staking() {
   const closedPosns = positions.filter(p => p.status !== 'active');
 
   return (
-    <div className="p-5 space-y-4 fade-in max-w-[1200px] mx-auto">
+    <div className="p-3 sm:p-5 space-y-4 fade-in max-w-[1200px] mx-auto">
 
       {/* ── Stats strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

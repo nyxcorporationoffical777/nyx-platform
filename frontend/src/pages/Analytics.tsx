@@ -119,7 +119,7 @@ export default function Analytics() {
   );
 
   return (
-    <div className="p-4 space-y-4 fade-in">
+    <div className="p-3 sm:p-4 space-y-4 fade-in">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">

@@ -263,7 +263,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="space-y-4 min-w-0 w-full">
+    <div className="p-3 sm:p-5 space-y-4 min-w-0 w-full">
       <div>
         <h1 className="font-bold text-base text-white">Account</h1>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>Manage your profile, security and withdrawal settings</p>
@@ -293,7 +293,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
 
         {/* ── Left Column ── */}
         <div className="space-y-4">
