@@ -36,15 +36,6 @@ const TX_META: Record<string, { label: string; color: string; sign: string }> = 
   referral: { label: 'Referral',   color: '#a855f7',      sign: '+' },
 };
 
-const DEPOSIT_EXCHANGES = [
-  { id: 'binance', name: 'Binance', initials: 'BN', color: '#f5c542', url: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDT' },
-  { id: 'bybit',   name: 'Bybit',   initials: 'BB', color: '#f97316', url: 'https://www.bybit.com/user/assets/withdraw?coin=USDT' },
-  { id: 'okx',     name: 'OKX',     initials: 'OK', color: '#06b6d4', url: 'https://www.okx.com/balance/withdrawal' },
-  { id: 'kucoin',  name: 'KuCoin',  initials: 'KC', color: '#22c55e', url: 'https://www.kucoin.com/assets/withdraw/USDT' },
-  { id: 'coinbase',name: 'Coinbase',initials: 'CB', color: '#0052ff', url: 'https://accounts.coinbase.com/send' },
-  { id: 'kraken',  name: 'Kraken',  initials: 'KR', color: '#5741d9', url: 'https://www.kraken.com/u/funding/withdraw?asset=USDT' },
-];
-
 // Platform USDT TRC20 deposit address
 const PLATFORM_ADDRESS = 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE';
 
@@ -53,12 +44,10 @@ export default function Wallet() {
   const { user } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [txs, setTxs] = useState<Tx[]>([]);
-  const [totalUsd, setTotalUsd] = useState(0);
-  const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'portfolio'|'transactions'|'convert'>('portfolio');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [copied, setCopied] = useState('');
-  const [showAssetDropdown, setShowAssetDropdown] = useState(false);
 
   // Convert state
   const [fromAsset, setFromAsset] = useState('USDT');
@@ -85,8 +74,7 @@ export default function Wallet() {
     try {
       const { data } = await api.get('/wallet');
       setAssets(data.assets);
-      setTotalUsd(data.total_usd);
-      if (!selectedAsset && data.assets.length > 0) {
+            if (!selectedAsset && data.assets.length > 0) {
         setSelectedAsset(data.assets.find((a: Asset) => a.asset === 'USDT') || data.assets[0]);
       }
     } catch {
@@ -738,7 +726,6 @@ export default function Wallet() {
         amount={amount}
         setAmount={setAmount}
         error={error}
-        setError={setError}
         msg={msg}
         loading={loading}
         onSubmit={handleDeposit}
@@ -747,7 +734,6 @@ export default function Wallet() {
         txid={txid}
         setTxid={setTxid}
         txidError={txidError}
-        setTxidError={setTxidError}
         txidMsg={txidMsg}
         txidLoading={txidLoading}
         submitTxid={submitTxid}
@@ -761,7 +747,6 @@ export default function Wallet() {
         amount={amount}
         setAmount={setAmount}
         error={error}
-        setError={setError}
         msg={msg}
         loading={loading}
         onSubmit={handleWithdraw}

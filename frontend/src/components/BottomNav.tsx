@@ -4,8 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Wallet, Bot, BarChart2, Menu, X,
   Settings, Users, Gift, Trophy, CreditCard, Lock,
-  HelpCircle, Scale, LineChart, ArrowLeftRight,
-  LogOut,
+  HelpCircle, Scale, LineChart, LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 

@@ -1,7 +1,4 @@
-import { useState } from 'react';
 import { X, AlertTriangle, CheckCircle, Info, Send, Zap, Shield, Copy, ExternalLink } from 'lucide-react';
-import { useToast } from '../components/Toast';
-import TooltipHint from '../components/Tooltip';
 
 interface ModalProps {
   title: string;
@@ -30,7 +27,6 @@ interface DepositModalProps {
   amount: string;
   setAmount: (val: string) => void;
   error: string;
-  setError: (val: string) => void;
   msg: string;
   loading: boolean;
   onSubmit: () => void;
@@ -39,7 +35,6 @@ interface DepositModalProps {
   txid: string;
   setTxid: (val: string) => void;
   txidError: string;
-  setTxidError: (val: string) => void;
   txidMsg: string;
   txidLoading: boolean;
   submitTxid: () => void;
@@ -47,7 +42,7 @@ interface DepositModalProps {
   copyPlatformAddress: () => void;
 }
 
-export function DepositModal({ show, onClose, amount, setAmount, error, setError, msg, loading, onSubmit, depositTab, setDepositTab, txid, setTxid, txidError, setTxidError, txidMsg, txidLoading, submitTxid, platCopied, copyPlatformAddress }: DepositModalProps) {
+export function DepositModal({ show, onClose, amount, setAmount, error, msg, loading, onSubmit, depositTab, setDepositTab, txid, setTxid, txidError, txidMsg, txidLoading, submitTxid, platCopied, copyPlatformAddress }: DepositModalProps) {
   if (!show) return null;
 
   const PLATFORM_ADDRESS = 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE';
@@ -254,14 +249,13 @@ interface WithdrawModalProps {
   amount: string;
   setAmount: (val: string) => void;
   error: string;
-  setError: (val: string) => void;
   msg: string;
   loading: boolean;
   onSubmit: () => void;
   user: any;
 }
 
-export function WithdrawModal({ show, onClose, amount, setAmount, error, setError, msg, loading, onSubmit, user }: WithdrawModalProps) {
+export function WithdrawModal({ show, onClose, amount, setAmount, error, msg, loading, onSubmit, user }: WithdrawModalProps) {
   if (!show) return null;
 
   return (
