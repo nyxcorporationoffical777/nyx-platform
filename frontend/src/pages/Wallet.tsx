@@ -36,6 +36,7 @@ export default function Wallet() {
   const [tab, setTab] = useState<'portfolio'|'transactions'|'convert'>('portfolio');
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [copied, setCopied] = useState('');
+  const [showAssetDropdown, setShowAssetDropdown] = useState(false);
 
   // Convert state
   const [fromAsset, setFromAsset] = useState('USDT');
@@ -123,14 +124,22 @@ export default function Wallet() {
         style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
         <p className="section-label mb-3">Portfolio</p>
         <div className="flex flex-wrap gap-3">
-          {/* Platform balance */}
-          <div className="flex-1 min-w-[140px] px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
+          {/* Platform balance - clickable */}
+          <button 
+            onClick={() => setShowAssetDropdown(!showAssetDropdown)}
+            className="flex-1 min-w-[140px] px-4 py-3 rounded-xl text-left transition-all"
+            style={{ 
+              background: showAssetDropdown ? 'var(--bg4)' : 'var(--bg3)', 
+              border: '1px solid var(--border)',
+              transform: showAssetDropdown ? 'scale(0.98)' : 'scale(1)'
+            }}>
             <p className="section-label mb-1">Platform Balance</p>
-            <p className="mono font-bold text-white" style={{ fontSize: 20, letterSpacing: '-0.03em' }}>
+            <p className="mono font-bold text-white flex items-center gap-2" style={{ fontSize: 20, letterSpacing: '-0.03em' }}>
               ${(user?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <ChevronRight size={16} className={`transition-transform ${showAssetDropdown ? 'rotate-90' : ''}`} style={{ color: 'var(--text3)' }} />
             </p>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>USD · yield + deposits</p>
-          </div>
+          </button>
           {totalUsd > 0 && (
             <div className="flex-1 min-w-[140px] px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
               <p className="section-label mb-1">Crypto Holdings</p>
@@ -143,35 +152,48 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Asset pills */}
-      <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2">
-        {assets.map(a => {
-          const color = ASSET_COLORS[a.asset] || '#8b8b9a';
-          const isSelected = selectedAsset?.asset === a.asset && tab === 'portfolio';
-          return (
-            <button key={a.asset}
-              onClick={() => { setSelectedAsset(a); setTab('portfolio'); }}
-              className="flex flex-col items-center py-3 px-2 rounded-xl transition-all duration-150"
-              style={isSelected
-                ? { background: `${color}12`, border: `1px solid ${color}30` }
-                : { background: 'var(--bg2)', border: '1px solid var(--border)' }}
-              onMouseEnter={e => { if (!isSelected) { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'; } }}
-              onMouseLeave={e => { if (!isSelected) { (e.currentTarget as HTMLElement).style.background = 'var(--bg2)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; } }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm mb-2"
-                style={{ background: `${color}14`, color, border: `1px solid ${color}20` }}>
-                {ASSET_ICONS[a.asset] || a.asset.charAt(0)}
-              </div>
-              <p className="text-xs font-semibold" style={{ color: isSelected ? '#fff' : 'var(--text2)' }}>{a.asset}</p>
-              <p className="mono mt-0.5" style={{ color: isSelected ? color : 'var(--text3)', fontSize: 10 }}>
-                {a.balance < 0.001 ? a.balance.toFixed(5) : a.balance.toFixed(4)}
-              </p>
-              <p className="mt-0.5" style={{ color: isSelected ? 'var(--yellow)' : 'var(--text3)', fontSize: 10 }}>
-                ${a.usd_value.toFixed(2)}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+      {/* Asset dropdown list */}
+      {showAssetDropdown && (
+        <div className="rounded-xl overflow-hidden"
+          style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+          <div className="max-h-64 overflow-y-auto">
+            {assets.map(a => {
+              const color = ASSET_COLORS[a.asset] || '#8b8b9a';
+              const isSelected = selectedAsset?.asset === a.asset && tab === 'portfolio';
+              return (
+                <button key={a.asset}
+                  onClick={() => { setSelectedAsset(a); setTab('portfolio'); setShowAssetDropdown(false); }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-opacity-80"
+                  style={{
+                    background: isSelected ? `${color}12` : 'transparent',
+                    borderBottom: '1px solid var(--border)',
+                  }}>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0"
+                    style={{ background: `${color}14`, color, border: `1px solid ${color}20` }}>
+                    {ASSET_ICONS[a.asset] || a.asset.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-white">{a.asset}</p>
+                      <p className="mono text-xs" style={{ color: color }}>
+                        {a.balance < 0.001 ? a.balance.toFixed(5) : a.balance.toFixed(4)}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <p className="text-xs" style={{ color: 'var(--text3)' }}>
+                        {a.deposit_address ? a.network : 'No address'}
+                      </p>
+                      <p className="mono text-xs" style={{ color: isSelected ? 'var(--yellow)' : 'var(--text3)' }}>
+                        ${a.usd_value.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1.5">

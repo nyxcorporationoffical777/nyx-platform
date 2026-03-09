@@ -139,48 +139,104 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right: market table + mini yield card */}
-            <div className="fade-in-up-2 flex flex-col gap-4">
-              <div className="ex-card overflow-hidden card-hover" style={{ borderRadius: 8 }}>
-                <div className="flex items-center justify-between px-4 py-2.5" style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
-                  <span className="text-xs font-bold text-white">Live Market Overview</span>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full blink" style={{ background: 'var(--green)' }} />
-                    <span className="text-xs font-medium" style={{ color: 'var(--green)' }}>Live</span>
+            {/* Right: Interactive yield cards with effects */}
+            <div className="fade-in-up-2 space-y-4">
+              {/* Live yield animation card */}
+              <div className="relative rounded-2xl overflow-hidden group cursor-pointer transition-all duration-500 hover:scale-[1.02]"
+                style={{ 
+                  background: 'linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%)',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 0 40px rgba(99,102,241,0.1)'
+                }}>
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{ 
+                    background: 'linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(168,85,247,0.1) 100%)',
+                  }} />
+                <div className="relative p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full animate-pulse" style={{ background: 'var(--green)', boxShadow: '0 0 20px var(--green)' }} />
+                      <span className="text-xs font-bold text-white">Live Yield Engine</span>
+                    </div>
+                    <div className="text-xs font-medium" style={{ color: 'var(--green)' }}>Active Now</div>
+                  </div>
+                  
+                  {/* Animated yield counter */}
+                  <div className="text-center mb-6">
+                    <div className="text-3xl font-black mono text-white mb-2">
+                      <span className="inline-block animate-pulse" style={{ color: 'var(--green)' }}>$</span>
+                      <span className="inline-block">124,800</span>
+                      <span className="text-sm font-normal ml-1" style={{ color: 'var(--text3)' }}>users earning</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <TrendingUp size={12} style={{ color: 'var(--green)' }} />
+                        <span style={{ color: 'var(--green)' }}>3.06% avg daily</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Activity size={12} style={{ color: 'var(--cyan)' }} />
+                        <span style={{ color: 'var(--cyan)' }}>24/7 running</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Interactive tier cards */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { tier: 'Gold', rate: '2.80%', color: '#f59e0b', glow: 'rgba(245,158,11,0.3)' },
+                      { tier: 'Platinum', rate: '3.50%', color: '#06b6d4', glow: 'rgba(6,182,212,0.3)' },
+                      { tier: 'Diamond', rate: '5.00%', color: '#8b5cf6', glow: 'rgba(139,92,246,0.3)' },
+                    ].map((t, i) => (
+                      <div key={t.tier} 
+                        className="relative rounded-xl p-3 text-center transition-all duration-300 hover:scale-105 cursor-pointer group"
+                        style={{ 
+                          background: `linear-gradient(135deg, ${t.color}15 0%, ${t.color}08 100%)`,
+                          border: `1px solid ${t.color}30`,
+                          animation: `fadeInUp ${0.3 + i * 0.1}s ease-out`
+                        }}>
+                        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          style={{ 
+                            background: `radial-gradient(circle at center, ${t.glow} 0%, transparent 70%)`,
+                            filter: 'blur(8px)'
+                          }} />
+                        <div className="relative">
+                          <p className="text-xs font-bold mb-1" style={{ color: t.color }}>{t.tier}</p>
+                          <p className="text-lg font-black mono" style={{ color: t.color }}>{t.rate}</p>
+                          <p className="text-[9px]" style={{ color: 'var(--text3)' }}>daily</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      {['Pair', 'Price', '24h', 'Vol'].map(h => (
-                        <th key={h} className="px-4 py-2 text-left font-medium" style={{ color: 'var(--text3)' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MARKETS.map(m => (
-                      <tr key={m.sym} className="ex-row">
-                        <td className="px-4 py-2.5 font-semibold text-white">{m.sym}</td>
-                        <td className="px-4 py-2.5 mono" style={{ color: 'var(--text2)' }}>{m.price}</td>
-                        <td className="px-4 py-2.5 font-semibold" style={{ color: m.up ? 'var(--green)' : 'var(--red)' }}>{m.chg}</td>
-                        <td className="px-4 py-2.5" style={{ color: 'var(--text3)' }}>{m.vol}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
 
-              {/* Yield preview mini card */}
-              <div className="rounded-lg p-4 grid grid-cols-3 gap-3" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+              {/* Quick stats cards with hover effects */}
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { tier: 'Gold', bal: '$2,000', daily: '+$56/day', c: '#f59e0b' },
-                  { tier: 'Platinum', bal: '$5,000', daily: '+$175/day', c: '#06b6d4' },
-                  { tier: 'Diamond', bal: '$10,000', daily: '+$500/day', c: '#8b5cf6' },
-                ].map(p => (
-                  <div key={p.tier} className="text-center rounded p-2" style={{ background: 'var(--bg3)' }}>
-                    <p className="text-xs font-bold mb-1" style={{ color: p.c }}>{p.tier}</p>
-                    <p className="text-xs mono" style={{ color: 'var(--text3)' }}>{p.bal}</p>
-                    <p className="text-xs font-bold mono" style={{ color: 'var(--green)' }}>{p.daily}</p>
+                  { label: 'Total Yield', value: '$4.2M+', icon: DollarSign, color: 'var(--green)', trend: '+12.4%' },
+                  { label: 'Uptime', value: '99.97%', icon: Activity, color: 'var(--cyan)', trend: 'Stable' },
+                ].map((stat, i) => (
+                  <div key={stat.label}
+                    className="relative rounded-xl p-4 transition-all duration-300 hover:scale-[1.03] cursor-pointer group"
+                    style={{ 
+                      background: 'var(--bg2)',
+                      border: '1px solid var(--border)',
+                      animation: `fadeInUp ${0.4 + i * 0.1}s ease-out`
+                    }}>
+                    <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      style={{ 
+                        background: `radial-gradient(circle at top right, ${stat.color}10 0%, transparent 60%)`,
+                      }} />
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <stat.icon size={16} style={{ color: stat.color }} />
+                        <span className="text-xs font-medium" style={{ color: stat.color === 'var(--green)' ? 'var(--green)' : 'var(--cyan)' }}>
+                          {stat.trend}
+                        </span>
+                      </div>
+                      <p className="text-lg font-black mono text-white">{stat.value}</p>
+                      <p className="text-xs" style={{ color: 'var(--text3)' }}>{stat.label}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -258,19 +314,56 @@ export default function Home() {
       <section style={{ background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4"
+              style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: 'var(--brand-1)' }}>
+              <Zap size={11} /> Core Features
+            </div>
             <h2 className="text-3xl font-black text-white mb-2">Why Choose Nyx</h2>
             <p className="text-sm" style={{ color: 'var(--text3)' }}>Built for performance, security, and simplicity</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-3 gap-6">
             {FEATURES.map((f, i) => (
-              <div key={i} className="rounded-2xl p-5 card-hover"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 flex-shrink-0"
-                  style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
-                  <f.icon size={18} style={{ color: f.color }} />
+              <div key={i} 
+                className="group relative rounded-2xl p-6 transition-all duration-500 hover:scale-[1.02] cursor-pointer overflow-hidden"
+                style={{ 
+                  background: 'var(--bg-card)', 
+                  border: '1px solid var(--border)',
+                  animation: `fadeInUp ${0.3 + i * 0.1}s ease-out`
+                }}>
+                {/* Hover glow effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{ 
+                    background: `radial-gradient(circle at top right, ${f.color}08 0%, transparent 60%)`,
+                    filter: 'blur(20px)'
+                  }} />
+                
+                {/* Border glow on hover */}
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${f.color}15 0%, transparent 50%)`,
+                    border: `1px solid ${f.color}30`
+                  }} />
+                
+                <div className="relative">
+                  {/* Animated icon container */}
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
+                    style={{ 
+                      background: `${f.color}12`, 
+                      border: `1px solid ${f.color}25`,
+                      boxShadow: `0 4px 20px ${f.color}20`
+                    }}>
+                    <f.icon size={20} style={{ color: f.color }} />
+                  </div>
+                  
+                  <h3 className="font-bold text-white text-sm mb-2 group-hover:text-white transition-colors">{f.title}</h3>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text2)', lineHeight: '1.7' }}>{f.desc}</p>
+                  
+                  {/* Hover indicator */}
+                  <div className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span className="text-xs font-medium" style={{ color: f.color }}>Learn more</span>
+                    <ChevronRight size={12} style={{ color: f.color }} className="transition-transform group-hover:translate-x-1" />
+                  </div>
                 </div>
-                <h3 className="font-bold text-white text-sm mb-2">{f.title}</h3>
-                <p className="text-xs leading-relaxed" style={{ color: 'var(--text2)', lineHeight: '1.7' }}>{f.desc}</p>
               </div>
             ))}
           </div>

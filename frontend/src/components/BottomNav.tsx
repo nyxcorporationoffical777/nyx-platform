@@ -4,7 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Wallet, Bot, BarChart2, Menu, X,
   Settings, Users, Gift, Trophy, CreditCard, Lock,
-  HelpCircle, Scale, BadgeCheck, LineChart, ArrowLeftRight,
+  HelpCircle, Scale, LineChart, ArrowLeftRight,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -30,7 +30,6 @@ const MORE_NAV = [
   ]},
   { section: 'Account', items: [
     { to: '/profile',  icon: Settings,    label: 'Settings' },
-    { to: '/kyc',      icon: BadgeCheck,  label: 'KYC Verification' },
     { to: '/help',     icon: HelpCircle,  label: 'Help & FAQ' },
     { to: '/legal',    icon: Scale,       label: 'Legal & T&C' },
   ]},
