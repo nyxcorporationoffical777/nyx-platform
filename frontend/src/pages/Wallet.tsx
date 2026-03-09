@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Wallet as WalletIcon, Copy, RefreshCw, ArrowUpRight, ArrowDownLeft, TrendingUp, ChevronRight, CheckCircle, ArrowLeftRight } from 'lucide-react';
+import { Wallet as WalletIcon, Copy, RefreshCw, ArrowUpRight, ArrowDownLeft, TrendingUp, ChevronRight, CheckCircle, ArrowLeftRight, ArrowDownCircle, ArrowUpCircle, Clock, AlertTriangle, Star, Zap, Info } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../api/axios';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import TooltipHint from '../components/Tooltip';
+import { DepositModal, WithdrawModal } from './WalletModals';
 
 interface Asset {
   id: number; user_id: number; asset: string; balance: number;
@@ -26,6 +29,25 @@ const TX_COLORS: Record<string, string> = {
   convert: '#06b6d4', referral: '#a78bfa', trade_close: 'var(--yellow)',
 };
 
+const TX_META: Record<string, { label: string; color: string; sign: string }> = {
+  deposit:  { label: 'Deposit',    color: 'var(--green)', sign: '+' },
+  withdraw: { label: 'Withdrawal', color: 'var(--red)',   sign: '-' },
+  yield:    { label: 'Yield',      color: 'var(--yellow)',sign: '+' },
+  referral: { label: 'Referral',   color: '#a855f7',      sign: '+' },
+};
+
+const DEPOSIT_EXCHANGES = [
+  { id: 'binance', name: 'Binance', initials: 'BN', color: '#f5c542', url: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDT' },
+  { id: 'bybit',   name: 'Bybit',   initials: 'BB', color: '#f97316', url: 'https://www.bybit.com/user/assets/withdraw?coin=USDT' },
+  { id: 'okx',     name: 'OKX',     initials: 'OK', color: '#06b6d4', url: 'https://www.okx.com/balance/withdrawal' },
+  { id: 'kucoin',  name: 'KuCoin',  initials: 'KC', color: '#22c55e', url: 'https://www.kucoin.com/assets/withdraw/USDT' },
+  { id: 'coinbase',name: 'Coinbase',initials: 'CB', color: '#0052ff', url: 'https://accounts.coinbase.com/send' },
+  { id: 'kraken',  name: 'Kraken',  initials: 'KR', color: '#5741d9', url: 'https://www.kraken.com/u/funding/withdraw?asset=USDT' },
+];
+
+// Platform USDT TRC20 deposit address
+const PLATFORM_ADDRESS = 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE';
+
 export default function Wallet() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -44,6 +66,21 @@ export default function Wallet() {
   const [convertAmount, setConvertAmount] = useState('');
   const [converting, setConverting] = useState(false);
 
+  // Assets/deposit/withdraw state
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState('all');
+  const [depositTab, setDepositTab] = useState<'send' | 'manual'>('send');
+  const [txid, setTxid] = useState('');
+  const [txidLoading, setTxidLoading] = useState(false);
+  const [txidMsg, setTxidMsg] = useState('');
+  const [txidError, setTxidError] = useState('');
+  const [platCopied, setPlatCopied] = useState(false);
+
   const fetchWallet = useCallback(async () => {
     try {
       const { data } = await api.get('/wallet');
@@ -57,7 +94,96 @@ export default function Wallet() {
     } finally {
       setLoading(false);
     }
+  }, [selectedAsset, toast]);
+
+  const fetchTx = useCallback(async () => {
+    try { const r = await api.get('/assets/transactions'); setTxs(r.data); } catch {}
   }, []);
+
+  useEffect(() => { fetchTx(); }, [fetchTx]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchWallet(), fetchTx()]);
+    setRefreshing(false);
+  };
+
+  const copyPlatformAddress = () => {
+    navigator.clipboard.writeText(PLATFORM_ADDRESS);
+    setPlatCopied(true);
+    toast('info', 'Address Copied', 'Paste it in your exchange withdrawal form as the destination.');
+    setTimeout(() => setPlatCopied(false), 2500);
+  };
+
+  const submitTxid = async () => {
+    setTxidError(''); setTxidMsg('');
+    if (!txid.trim()) { setTxidError('Paste your transaction ID (TxID)'); return; }
+    setTxidLoading(true);
+    try {
+      const r = await api.post('/assets/deposit-txid', { txid: txid.trim() });
+      setTxidMsg(r.data.message);
+      setTxid('');
+      toast('success', 'Deposit Submitted', 'Your transaction is being verified. Balance updates once confirmed.');
+      await fetchWallet(); await fetchTx();
+    } catch (e: any) {
+      const err = e.response?.data?.error || 'Verification failed. Try again.';
+      setTxidError(err);
+      toast('error', 'Deposit Failed', err);
+    } finally { setTxidLoading(false); }
+  };
+
+  const handleDeposit = async () => {
+    setError(''); setMsg('');
+    if (!amount || Number(amount) <= 0) { setError('Enter a valid amount'); return; }
+    if (Number(amount) < 100) { setError('Minimum deposit is $100'); return; }
+    setLoading(true);
+    try {
+      const r = await api.post('/assets/deposit', { amount: Number(amount) });
+      setMsg(r.data.message); setAmount('');
+      toast('success', 'Deposit Recorded', `$${Number(amount).toFixed(2)} added to your balance.`);
+      await fetchWallet(); await fetchTx();
+      setTimeout(() => { setShowDeposit(false); setAmount(''); setMsg(''); setError(''); }, 1500);
+    } catch (e: any) {
+      const err = e.response?.data?.error || 'Failed';
+      setError(err);
+      toast('error', 'Deposit Failed', err);
+    }
+    finally { setLoading(false); }
+  };
+
+  const handleWithdraw = async () => {
+    setError(''); setMsg('');
+    if (!amount || Number(amount) <= 0) { setError('Enter a valid amount'); return; }
+    if (!user?.crypto_address) {
+      setError('Set a withdrawal address in Account settings first.');
+      toast('warning', 'No Withdrawal Address', 'Go to Account → Withdrawal Address and add your USDT wallet.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const r = await api.post('/assets/withdraw', { amount: Number(amount) });
+      setMsg(r.data.message); setAmount('');
+      toast('info', 'Withdrawal Requested', 'Your request is being reviewed. Processing takes 1–3 business days.');
+      await fetchWallet(); await fetchTx();
+      setTimeout(() => { setShowWithdraw(false); setAmount(''); setMsg(''); setError(''); }, 1500);
+    } catch (e: any) {
+      const err = e.response?.data?.error || 'Failed';
+      setError(err);
+      toast('error', 'Withdrawal Failed', err);
+    }
+    finally { setLoading(false); }
+  };
+
+  const closeModal = () => { 
+    setShowDeposit(false); 
+    setShowWithdraw(false); 
+    setAmount(''); 
+    setMsg(''); 
+    setError(''); 
+    setTxid(''); 
+    setTxidError(''); 
+    setTxidMsg('');
+  };
 
   const fetchTxs = useCallback(async () => {
     try {
@@ -108,6 +234,16 @@ export default function Wallet() {
 
   const fromBal = assets.find(a => a.asset === fromAsset)?.balance || 0;
   const SUPPORTED = ['USDT', 'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'DOGE'];
+  const filtered = filter === 'all' ? txs : txs.filter(t => t.type === filter);
+
+  const chartData = (() => {
+    let running = 0;
+    return [...txs].reverse().map(t => {
+      if (['deposit','yield','referral'].includes(t.type)) running += t.amount;
+      else if (t.type === 'withdraw') running = Math.max(0, running - t.amount);
+      return { date: new Date(t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), balance: parseFloat(running.toFixed(2)) };
+    });
+  })();
 
   if (loading) {
     return (
@@ -119,81 +255,241 @@ export default function Wallet() {
 
   return (
     <div className="p-3 sm:p-4 space-y-3 sm:space-y-4 fade-in">
-      {/* ── Header ── */}
-      <div className="rounded-2xl p-4"
-        style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-        <p className="section-label mb-3">Portfolio</p>
-        <div className="flex flex-wrap gap-3">
-          {/* Platform balance - clickable */}
-          <button 
-            onClick={() => setShowAssetDropdown(!showAssetDropdown)}
-            className="flex-1 min-w-[140px] px-4 py-3 rounded-xl text-left transition-all"
-            style={{ 
-              background: showAssetDropdown ? 'var(--bg4)' : 'var(--bg3)', 
-              border: '1px solid var(--border)',
-              transform: showAssetDropdown ? 'scale(0.98)' : 'scale(1)'
-            }}>
-            <p className="section-label mb-1">Platform Balance</p>
-            <p className="mono font-bold text-white flex items-center gap-2" style={{ fontSize: 20, letterSpacing: '-0.03em' }}>
-              ${(user?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              <ChevronRight size={16} className={`transition-transform ${showAssetDropdown ? 'rotate-90' : ''}`} style={{ color: 'var(--text3)' }} />
-            </p>
-            <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>USD · yield + deposits</p>
-          </button>
-          {totalUsd > 0 && (
-            <div className="flex-1 min-w-[140px] px-4 py-3 rounded-xl" style={{ background: 'var(--bg3)', border: '1px solid var(--border)' }}>
-              <p className="section-label mb-1">Crypto Holdings</p>
-              <p className="mono font-bold" style={{ fontSize: 20, letterSpacing: '-0.03em', color: 'var(--yellow)' }}>
-                ${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text3)' }}>{assets.filter(a => a.balance > 0).length} assets</p>
-            </div>
-          )}
+      {/* Page header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="section-label mb-1">Finance</p>
+          <h1 className="font-bold text-white text-lg" style={{ letterSpacing: '-0.025em' }}>Wallet & Assets</h1>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>Balance · Deposits · Withdrawals · Portfolio</p>
         </div>
+        <button onClick={refresh}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+          style={{ background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text2)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--yellow)'; (e.currentTarget as HTMLElement).style.color = 'var(--yellow)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}>
+          <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} /> Refresh
+        </button>
       </div>
 
-      {/* Asset dropdown list */}
-      {showAssetDropdown && (
-        <div className="rounded-xl overflow-hidden"
-          style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-          <div className="max-h-64 overflow-y-auto">
-            {assets.map(a => {
-              const color = ASSET_COLORS[a.asset] || '#8b8b9a';
-              const isSelected = selectedAsset?.asset === a.asset && tab === 'portfolio';
-              return (
-                <button key={a.asset}
-                  onClick={() => { setSelectedAsset(a); setTab('portfolio'); setShowAssetDropdown(false); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-opacity-80"
-                  style={{
-                    background: isSelected ? `${color}12` : 'transparent',
-                    borderBottom: '1px solid var(--border)',
-                  }}>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0"
-                    style={{ background: `${color}14`, color, border: `1px solid ${color}20` }}>
-                    {ASSET_ICONS[a.asset] || a.asset.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-white">{a.asset}</p>
-                      <p className="mono text-xs" style={{ color: color }}>
-                        {a.balance < 0.001 ? a.balance.toFixed(5) : a.balance.toFixed(4)}
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <p className="text-xs" style={{ color: 'var(--text3)' }}>
-                        {a.deposit_address ? a.network : 'No address'}
-                      </p>
-                      <p className="mono text-xs" style={{ color: isSelected ? 'var(--yellow)' : 'var(--text3)' }}>
-                        ${a.usd_value.toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Balance',   value: (user?.balance ?? 0).toFixed(2),         color: 'var(--yellow)', prefix: '$', sub: `${user?.vip_level || 'Starter'} tier`,   tip: 'Your current spendable balance. Grows with deposits and yield sessions.',  glow: 'rgba(240,185,11,0.08)' },
+          { label: 'Total Deposited', value: (user?.total_deposited ?? 0).toFixed(2), color: 'var(--green)',  prefix: '$', sub: 'All time',                               tip: 'Total amount you have deposited across all time.',                         glow: 'rgba(14,203,129,0.08)' },
+          { label: 'Total Withdrawn', value: (user?.total_withdrawn ?? 0).toFixed(2), color: 'var(--red)',    prefix: '$', sub: 'All time',                               tip: 'Total amount withdrawn. Withdrawals require a verified wallet address.',   glow: 'rgba(246,70,93,0.08)' },
+          { label: 'Total Earned',    value: (user?.total_earned ?? 0).toFixed(4),    color: 'var(--yellow)', prefix: '$', sub: 'Yield + referral',                      tip: 'Lifetime earnings from yield sessions and referral commissions.',          glow: 'rgba(245,197,66,0.08)' },
+        ].map(c => (
+          <div key={c.label} className="ex-card px-4 py-4">
+            <div className="flex items-center gap-1 mb-2">
+              <p className="section-label">{c.label}</p>
+              <TooltipHint content={c.tip} position="bottom">
+                <Info size={9} style={{ color: 'var(--text3)', cursor: 'help' }} />
+              </TooltipHint>
+            </div>
+            <p className="font-bold mono text-xl" style={{ color: c.color }}>{c.prefix}{c.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text3)' }}>{c.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* VIP + Daily rate info row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* VIP card */}
+        <div className="ex-card p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(245,197,66,0.1)', border: '1px solid rgba(245,197,66,0.18)' }}>
+            <Star size={16} style={{ color: 'var(--yellow)' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs" style={{ color: 'var(--text3)' }}>Current VIP Tier</p>
+            <p className="font-semibold text-sm text-white">{user?.vip_level || 'Starter'}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--green)' }}>
+              {((user?.vip_info?.dailyRate ?? 0.005) * 100).toFixed(2)}%/day
+            </p>
+          </div>
+        </div>
+        {/* Daily profit estimate */}
+        <div className="ex-card p-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.18)' }}>
+            <TrendingUp size={16} style={{ color: 'var(--green)' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs" style={{ color: 'var(--text3)' }}>Est. Daily Profit</p>
+            <p className="font-semibold text-sm mono" style={{ color: 'var(--green)' }}>
+              ${((user?.balance ?? 0) * (user?.vip_info?.dailyRate ?? 0.005)).toFixed(4)}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>$100 min balance</p>
+          </div>
+        </div>
+        {/* Next tier */}
+        {user?.next_vip ? (
+          <div className="ex-card p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(245,197,66,0.1)', border: '1px solid rgba(245,197,66,0.18)' }}>
+              <Zap size={16} style={{ color: 'var(--yellow)' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs" style={{ color: 'var(--text3)' }}>Next: {user.next_vip.name}</p>
+              <p className="font-semibold text-sm mono" style={{ color: 'var(--yellow)' }}>
+                ${(user.next_vip.minBalance - (user.balance ?? 0)).toFixed(2)} away
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>
+                Unlocks {(user.next_vip.dailyRate * 100).toFixed(1)}%/day
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="ex-card p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.18)' }}>
+              <Star size={16} style={{ color: '#a855f7' }} />
+            </div>
+            <div>
+              <p className="text-xs" style={{ color: 'var(--text3)' }}>VIP Status</p>
+              <p className="font-semibold text-sm" style={{ color: '#a855f7' }}>Max Tier</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text3)' }}>5.0%/day</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Deposit address notice */}
+      {!user?.crypto_address && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl"
+          style={{ background: 'rgba(246,70,93,0.06)', border: '1px solid rgba(246,70,93,0.2)' }}>
+          <AlertTriangle size={14} style={{ color: 'var(--red)', flexShrink: 0, marginTop: 1 }} />
+          <div className="flex-1">
+            <p className="text-xs font-bold" style={{ color: 'var(--red)' }}>No withdrawal address set</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text2)' }}>
+              You must add your <strong>USDT TRC-20 wallet address</strong> before you can request a withdrawal.
+              {' '}<a href="/profile" className="font-bold" style={{ color: 'var(--yellow)' }}>Set it in Account →</a>
+            </p>
           </div>
         </div>
       )}
+
+      {/* First-time deposit tip */}
+      {(user?.total_deposited ?? 0) === 0 && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl"
+          style={{ background: 'rgba(240,185,11,0.06)', border: '1px solid rgba(240,185,11,0.2)' }}>
+          <Info size={14} style={{ color: 'var(--yellow)', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p className="text-xs font-bold" style={{ color: 'var(--yellow)' }}>How to start earning</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text2)', lineHeight: 1.6 }}>
+              1. Click <strong>Deposit</strong> below → copy our USDT TRC-20 address → send from your exchange.
+              &nbsp;2. Once confirmed, go to <strong>Quant Engine</strong> and start a session to earn yield.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <TooltipHint content="Send USDT (TRC-20) to our platform address. Minimum deposit: $100." position="bottom">
+          <button onClick={() => { setShowDeposit(true); setError(''); setMsg(''); }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded text-xs font-semibold transition-colors"
+            style={{ background: 'rgba(14,203,129,0.1)', border: '1px solid rgba(14,203,129,0.3)', color: 'var(--green)' }}>
+            <ArrowDownCircle size={14} /> Deposit
+          </button>
+        </TooltipHint>
+        <TooltipHint content={user?.crypto_address ? 'Withdraw to your saved wallet address. Processed within 1–3 business days.' : 'Add a withdrawal address in Account settings first.'} position="bottom">
+          <button onClick={() => { setShowWithdraw(true); setError(''); setMsg(''); }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded text-xs font-semibold transition-colors"
+            style={{ background: 'rgba(246,70,93,0.1)', border: '1px solid rgba(246,70,93,0.3)', color: 'var(--red)' }}>
+            <ArrowUpCircle size={14} /> Withdraw
+          </button>
+        </TooltipHint>
+      </div>
+
+      {/* Chart */}
+      {chartData.length > 1 && (
+        <div className="ex-card p-4">
+          <p className="text-xs font-semibold text-white mb-3">Balance History</p>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="balGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#4f6ef7" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#4f6ef7" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="date" tick={{ fill: 'var(--text3)', fontSize: 10 }} />
+              <YAxis tick={{ fill: 'var(--text3)', fontSize: 10 }} />
+              <Tooltip contentStyle={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }} />
+              <Area type="monotone" dataKey="balance" stroke="var(--brand-1)" fill="url(#balGrad)" strokeWidth={1.5} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Transaction history */}
+      <div className="ex-card overflow-hidden">
+        <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-xs font-semibold text-white">Transaction History</span>
+            <div className="flex items-center gap-1 flex-wrap">
+              {['all','deposit','withdraw','yield','referral'].map(f => (
+                <button key={f} onClick={() => setFilter(f)}
+                  className="px-2.5 py-1 rounded text-xs capitalize transition-all"
+                  style={filter === f
+                    ? { background: 'var(--bg4)', color: 'var(--text)', fontWeight: 600, border: '1px solid var(--border2)' }
+                    : { color: 'var(--text3)', background: 'transparent', border: '1px solid transparent' }}>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-sm" style={{ color: 'var(--text3)' }}>No transactions found</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+          <table className="w-full text-xs" style={{ minWidth: 560 }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg3)' }}>
+                {['Type','Amount','Note','Status','Date & Time'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left font-medium" style={{ color: 'var(--text3)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(tx => {
+                const m = TX_META[tx.type] || TX_META.deposit;
+                return (
+                  <tr key={tx.id} className="ex-row">
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ background: `${m.color}18`, color: m.color, border: `1px solid ${m.color}30` }}>
+                        {m.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 mono font-semibold" style={{ color: m.color }}>
+                      {m.sign}${tx.amount.toFixed(4)}
+                    </td>
+                    <td className="px-4 py-3" style={{ color: 'var(--text2)' }}>{tx.note || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-1" style={{ color: 'var(--green)' }}>
+                        <CheckCircle size={11} /> {tx.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 mono" style={{ color: 'var(--text3)' }}>
+                      <span className="flex items-center gap-1">
+                        <Clock size={10} /> {new Date(tx.created_at).toLocaleString()}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          </div>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-1.5">
@@ -434,6 +730,43 @@ export default function Wallet() {
           </div>
         </div>
       )}
+
+      {/* Deposit and Withdraw Modals */}
+      <DepositModal
+        show={showDeposit}
+        onClose={closeModal}
+        amount={amount}
+        setAmount={setAmount}
+        error={error}
+        setError={setError}
+        msg={msg}
+        loading={loading}
+        onSubmit={handleDeposit}
+        depositTab={depositTab}
+        setDepositTab={setDepositTab}
+        txid={txid}
+        setTxid={setTxid}
+        txidError={txidError}
+        setTxidError={setTxidError}
+        txidMsg={txidMsg}
+        txidLoading={txidLoading}
+        submitTxid={submitTxid}
+        platCopied={platCopied}
+        copyPlatformAddress={copyPlatformAddress}
+      />
+      
+      <WithdrawModal
+        show={showWithdraw}
+        onClose={closeModal}
+        amount={amount}
+        setAmount={setAmount}
+        error={error}
+        setError={setError}
+        msg={msg}
+        loading={loading}
+        onSubmit={handleWithdraw}
+        user={user}
+      />
     </div>
   );
 }

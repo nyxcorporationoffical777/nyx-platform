@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Wallet, Bot, Users, TrendingUp, LogOut, HelpCircle, BarChart2,
   Trophy, CreditCard, Settings, Gift,
-  ArrowLeftRight, LayoutDashboard, ChevronUp, Lock, LineChart, BadgeCheck, Scale,
+  LayoutDashboard, ChevronUp, Lock, LineChart, BadgeCheck, Scale,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,7 +12,6 @@ const NAV = [
   ]},
   { section: 'Finance', items: [
     { to: '/wallet',    icon: Wallet,           label: 'Wallet',      dot: '' },
-    { to: '/assets',    icon: ArrowLeftRight,   label: 'Assets',      dot: '' },
     { to: '/topup',     icon: CreditCard,       label: 'Buy Crypto',  dot: '' },
   ]},
   { section: 'Markets', items: [

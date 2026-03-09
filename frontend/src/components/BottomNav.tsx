@@ -24,7 +24,6 @@ const MORE_NAV = [
     { to: '/leaderboard', icon: Trophy,        label: 'Leaderboard' },
   ]},
   { section: 'Finance', items: [
-    { to: '/assets',  icon: ArrowLeftRight, label: 'Assets / Deposit' },
     { to: '/topup',   icon: CreditCard,     label: 'Buy Crypto' },
     { to: '/analytics', icon: LineChart,    label: 'Analytics' },
   ]},

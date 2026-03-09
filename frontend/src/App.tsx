@@ -8,7 +8,6 @@ import { ToastProvider } from './components/Toast';
 const Home          = lazy(() => import('./pages/Home'));
 const Login         = lazy(() => import('./pages/Login'));
 const Register      = lazy(() => import('./pages/Register'));
-const Assets        = lazy(() => import('./pages/Assets'));
 const QuantBot      = lazy(() => import('./pages/QuantBot'));
 const Referrals     = lazy(() => import('./pages/Referrals'));
 const Profile       = lazy(() => import('./pages/Profile'));
@@ -73,8 +72,7 @@ function AppRoutes() {
       <Route path="/ref/:code" element={<RefLanding />} />
       <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/assets" element={<Assets />} />
-        <Route path="/bot" element={<QuantBot />} />
+                <Route path="/bot" element={<QuantBot />} />
         <Route path="/referrals" element={<Referrals />} />
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/profile" element={<Profile />} />
