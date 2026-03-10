@@ -66,7 +66,7 @@ export default function Home() {
             <TrendingUp size={15} color="#fff" strokeWidth={2.5} />
           </div>
           <div>
-            <p className="font-black text-[13px] text-white tracking-[0.12em]">NYX</p>
+            <p className="font-black text-[13px] text-red-500 tracking-[0.12em]">NYX - TEST</p>
             <p className="text-[9px] font-medium tracking-[0.08em] uppercase"
             style={{ color: 'var(--text3)' }}>Wealth Platform v2.0</p>
           </div>
