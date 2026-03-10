@@ -67,7 +67,8 @@ export default function Home() {
           </div>
           <div>
             <p className="font-black text-[13px] text-white tracking-[0.12em]">NYX</p>
-            <p className="text-[9px] tracking-[0.08em] uppercase" style={{ color: 'var(--text3)' }}>Wealth Platform</p>
+            <p className="text-[9px] font-medium tracking-[0.08em] uppercase"
+            style={{ color: 'var(--text3)' }}>Wealth Platform v2.0</p>
           </div>
         </div>
         <div className="hidden md:flex items-center gap-6">
